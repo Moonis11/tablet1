@@ -3,5 +3,5 @@ pandas
 pillow
 opencv-python
 easyocr
-torch==2.2.2+cpu
+torch==2.7.1+cpu
 --extra-index-url https://download.pytorch.org/whl/cpu
