@@ -176,29 +176,17 @@ st.title(translations["title"][lang])
 uploaded_file = st.file_uploader(label="", type=["jpg", "jpeg", "png", "jfif"], label_visibility="collapsed")
 
 if uploaded_file:
-    image = Image.open(uploaded_file)
-    image = fix_orientation(image)  # ✅ Mobil rasm to‘g‘rilash
+    try:
+        image = Image.open(uploaded_file)
+        image = resize_image(image)
+        image = fix_orientation(image)
 
-    # Qurilmaga qarab layout va shriftlar sozlash
-    if device == "mobile":
-        col1, col2 = st.columns([1, 3], gap="small")
-        fontsize_title = "18px"
-        df_height = 220
-    elif device == "tablet":
-        col1, col2 = st.columns([1, 2], gap="medium")
-        fontsize_title = "20px"
-        df_height = 300
-    else:  # desktop
         col1, col2 = st.columns([1, 2], gap="large")
-        fontsize_title = "22px"
-        df_height = 400
+        with col1:
+            st.image(image, caption="📸", use_container_width=True)
 
-    with col1:
-        st.image(image, caption="📸", use_container_width=True)
-
-    with col2:
-        with st.spinner(translations["detecting"][lang]):
-            try:
+        with col2:
+            with st.spinner(translations["detecting"][lang]):
                 drug_text, confidence = extract_drug_info_by_cropping(image)
                 cleaned = clean_drug_name(drug_text)
                 has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
@@ -216,10 +204,10 @@ if uploaded_file:
 
                 if drug_info:
                     nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = drug_info
-                    narx_html = f"<span style='color:#ffffff; font-weight:700;'>💵 Narx: {narx}</span>" if narx else ""
+                    narx_html = f"<span style='color:#ffffff; font-weight:600;'>💵 Narx: {narx}</span>" if narx else ""
                     st.markdown(
                         f"""
-                        <div style='display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; font-size: {fontsize_title}; font-weight: 700; padding: 15px 12px; background-color: #013220; border-radius: 12px; margin-bottom: 10px; color: white; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
+                        <div style='display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 700; padding: 15px 12px; background-color: #013220; border-radius: 12px; margin-bottom: 10px; color: white; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
                             <span style='word-break: break-word;'>💊 Dori nomi: {drug_name_display.upper()}</span>
                             {narx_html}
                         </div>
@@ -242,7 +230,7 @@ if uploaded_file:
                             "Narxi (taxminiy)": "Price"
                         }),
                         use_container_width=True,
-                        height=df_height
+                        height=220
                     )
 
                     section_title(translations["illness"][lang])
@@ -256,16 +244,11 @@ if uploaded_file:
 
                 else:
                     st.warning(translations["not_found"][lang])
-            except Exception as e:
-                st.error(f"❗ {e}")
 
-    st.markdown(
-        """
-        <div style='margin-top: 40px; padding: 15px; border-radius: 8px; background-color: #123024; color: #e8f5e9; font-size: 14px; border-left: 6px solid #4caf50; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
-            ⚠️ <strong>Ogohlantirish:</strong> Ilovada ko‘rsatilgan dori vositalari va ularning qo‘llanilishi faqat ma’lumot berish uchun. To‘g‘ri tashxis va davolash uchun shifokorga murojaat qiling.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    except Exception as e:
+        st.error(f"Xatolik yuz berdi: {e}")
+        import traceback
+        st.text(traceback.format_exc())
+
 else:
     st.info(translations["upload_label"][lang])
