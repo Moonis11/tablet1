@@ -148,7 +148,7 @@ def transliterate_ru_to_lat(text):
 def section_title(title_text):
     st.markdown(
         f"""
-        <div style='background-color: #123024; color: white; padding: 10px 15px; font-size: 20px; font-weight: bold; border-radius: 6px; margin-top: 20px;'>
+        <div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
             {title_text}
         </div>
         """,
@@ -165,7 +165,7 @@ if uploaded_file:
 
     col1, col2 = st.columns([1, 2], gap="large")
     with col1:
-        st.image(image, caption="📸")
+        st.image(image, caption="📸", use_column_width=True)
 
     with col2:
         with st.spinner(translations["detecting"][lang]):
@@ -187,11 +187,11 @@ if uploaded_file:
 
                 if drug_info:
                     nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = drug_info
-                    narx_html = f"<span style='color:#ffffff;'>💵 Narx: {narx}</span>" if narx else ""
+                    narx_html = f"<span style='color:#ffffff; font-weight:600;'>💵 Narx: {narx}</span>" if narx else ""
                     st.markdown(
                         f"""
-                        <div style='display: flex; justify-content: space-between; align-items: center; font-size: 22px; font-weight: 600; padding: 15px 8px; background-color: #013220; border-radius: 10px;'>
-                            <span style='color:white;'>💊 Dori nomi: {drug_name_display.upper()}</span>
+                        <div style='display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 700; padding: 15px 12px; background-color: #013220; border-radius: 12px; margin-bottom: 10px; color: white; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
+                            <span style='word-break: break-word;'>💊 Dori nomi: {drug_name_display.upper()}</span>
                             {narx_html}
                         </div>
                         """,
@@ -199,18 +199,22 @@ if uploaded_file:
                     )
 
                     st.markdown(
-                        f"<div style='font-size: 14px; color: gray;'>OCR aniqlik darajasi: {confidence}%</div>",
+                        f"<div style='font-size: 13px; color: #b0b0b0; margin-bottom: 15px;'>{translations['detecting'][lang]} OCR aniqlik darajasi: {confidence}%</div>",
                         unsafe_allow_html=True
                     )
 
                     section_title(translations["alt_drugs"][lang])
-                    st.dataframe(alternativalar.rename(columns={
-                        "Asl dorining nomi": "Drug",
-                        "Tasir etuvchi modda": "Ingredient",
-                        "Dori shakli": "Form",
-                        "Ishlab chiqargan mamlakat nomi": "Country",
-                        "Narxi (taxminiy)": "Price"
-                    }), use_container_width=True)
+                    st.dataframe(
+                        alternativalar.rename(columns={
+                            "Asl dorining nomi": "Drug",
+                            "Tasir etuvchi modda": "Ingredient",
+                            "Dori shakli": "Form",
+                            "Ishlab chiqargan mamlakat nomi": "Country",
+                            "Narxi (taxminiy)": "Price"
+                        }),
+                        use_container_width=True,
+                        height=220
+                    )
 
                     section_title(translations["illness"][lang])
                     st.write(kasallik)
@@ -220,6 +224,7 @@ if uploaded_file:
                         [f"- {line.strip()}" for line in instruktsiya.split("\n") if line.strip()]
                     )
                     st.markdown(formatted_instruksiya)
+
                 else:
                     st.warning(translations["not_found"][lang])
             except Exception as e:
@@ -227,7 +232,7 @@ if uploaded_file:
 
     st.markdown(
         """
-        <div style='margin-top: 40px; padding: 15px; border-radius: 8px; background-color: #123024; color: #e8f5e9; font-size: 16px; border-left: 6px solid #4caf50;'>
+        <div style='margin-top: 40px; padding: 15px; border-radius: 8px; background-color: #123024; color: #e8f5e9; font-size: 14px; border-left: 6px solid #4caf50; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
             ⚠️ <strong>Ogohlantirish:</strong> Ilovada ko‘rsatilgan dori vositalari va ularning qo‘llanilishi faqat ma’lumot berish uchun. To‘g‘ri tashxis va davolash uchun shifokorga murojaat qiling.
         </div>
         """,
