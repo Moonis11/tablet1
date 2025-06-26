@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image, ExifTags
+from oracle import extract_drug_info_by_cropping
+
 import re
 from difflib import get_close_matches
 import traceback
