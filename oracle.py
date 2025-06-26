@@ -13,10 +13,15 @@ def preprocess_image(pil_image):
     return binary
 
 def extract_drug_info_by_cropping(pil_image):
-    image = np.array(pil_image.convert("RGB"))  # PIL -> NumPy
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # OpenCV formatga o‘tkazish
+    # PIL -> NumPy (OpenCV format BGR)
+    image = np.array(pil_image.convert("RGB"))
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
+    # EasyOCR orqali matnlarni o'qish
     results = reader.readtext(image)
+
+    if not results:
+        return "", 0  # Agar hech narsa topilmasa
 
     data = []
     for (box, text, conf) in results:
@@ -40,15 +45,15 @@ def extract_drug_info_by_cropping(pil_image):
             'conf': conf
         })
 
-    if not data:
-        return "", 0
-
+    # Eng katta hajmdagi yoki balandlikdagi matnni topamiz (tartiblash)
     data.sort(key=lambda x: (x['height'] * 0.6 + x['area'] * 0.4), reverse=True)
     drug_name_data = data[0]
     raw_drug_name = drug_name_data['text']
     confidence = int(drug_name_data['conf'] * 100)
 
-    words = re.findall(r'\b[A-ZА-ЯЁ]{2,}\b', raw_drug_name.upper())
-    drug_name = " ".join(words)
+    # Dorining nomini filtrlaymiz: faqat harflar va raqamlar, kamida 2 harfli so'zlar
+    # Katta harflar va raqamlarni olamiz (yoki sizga moslab o'zgartiring)
+    words = re.findall(r'\b[A-Za-zА-Яа-яЁё0-9]{2,}\b', raw_drug_name)
+    drug_name = " ".join(words).strip()
 
     return drug_name, confidence
