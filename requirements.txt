@@ -1,6 +1,7 @@
-streamlit>=1.18
+streamlit>=1.32.0
 pandas
-Pillow
+pillow
 opencv-python
 easyocr
-torch==2.0.1
+torch==2.2.2+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
