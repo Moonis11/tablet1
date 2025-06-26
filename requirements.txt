@@ -8,4 +8,6 @@ easyocr==1.7.1
 numpy==1.26.4
 python-multipart==0.0.9
 scikit-learn==1.4.2
-python-telegram-bot==20.0  # <= 20.0 versiyasi Renderda kam muammo beradi
+python-telegram-bot==20.0
+setuptools>=42
+wheel
