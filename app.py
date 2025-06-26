@@ -1,13 +1,30 @@
 import streamlit as st
 import pandas as pd
 from oracle import extract_drug_info_by_cropping
-from PIL import Image
+from PIL import Image, ExifTags
 import re
 from difflib import get_close_matches
 
-st.set_page_config(page_title="Tablet App", layout="wide")
+# 📲 Mobil rasmni to‘g‘rilash
+def fix_orientation(img):
+    try:
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == 'Orientation':
+                break
+        exif = img._getexif()
+        if exif is not None:
+            orientation_val = exif.get(orientation)
+            if orientation_val == 3:
+                img = img.rotate(180, expand=True)
+            elif orientation_val == 6:
+                img = img.rotate(270, expand=True)
+            elif orientation_val == 8:
+                img = img.rotate(90, expand=True)
+    except Exception:
+        pass
+    return img
 
-# Til sozlamalari
+# 🌐 Til sozlamalari
 languages = {
     "🇺🇿 Uzbek": "uz",
     "🇷🇺 Русский": "ru",
@@ -35,11 +52,6 @@ translations = {
         "ru": "❗ Это лекарство не найдено в таблице.",
         "en": "❗ This drug was not found in the database."
     },
-    "drug_label": {
-        "uz": "💊 Dori nomi",
-        "ru": "💊 Название лекарства",
-        "en": "💊 Drug Name"
-    },
     "alt_drugs": {
         "uz": "🔄 Alternativ dorilar (mamlakati bilan)",
         "ru": "🔄 Альтернативные лекарства (с указанием страны)",
@@ -62,10 +74,11 @@ translations = {
     }
 }
 
+st.set_page_config(page_title="Tablet App", layout="wide")
+st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
+
 lang_choice = st.sidebar.radio("Til / Язык / Language  :", list(languages.keys()))
 lang = languages[lang_choice]
-
-st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
 @st.cache_data
 def load_csv():
@@ -97,7 +110,6 @@ def get_drug_info_from_csv(user_dori, df):
             return None
 
     row = df[df['Asl dorining nomi lower'] == user_dori].iloc[0]
-
     kasalliklar = row.get('Qaysi kasalliklarda qo‘llaniladi', '')
     instruktsiya = row.get('Instruksiya (foydalanish tartibi)', '')
     tasir_modda = row.get('Tasir etuvchi modda', '').strip().lower()
@@ -113,7 +125,6 @@ def get_drug_info_from_csv(user_dori, df):
         'Ishlab chiqargan mamlakat nomi',
         'Narxi (taxminiy)'
     ]]
-
     return user_dori, kasalliklar, instruktsiya, alternativalar, tasir_modda, narx
 
 def clean_drug_name(raw_name):
@@ -122,16 +133,16 @@ def clean_drug_name(raw_name):
     return cleaned
 
 def transliterate_ru_to_lat(text):
-    ru_to_lat = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z',
-        'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r',
-        'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh',
-        'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-        'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh', 'З': 'Z',
-        'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R',
-        'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'X', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh',
-        'Щ': 'Shch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
-    }
+    ru_to_lat = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+                 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+                 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+                 'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+                 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+                 'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+                 'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+                 'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+                 'Ф': 'F', 'Х': 'X', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
+                 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'}
     return ''.join(ru_to_lat.get(c, c) for c in text)
 
 def section_title(title_text):
@@ -144,13 +155,15 @@ def section_title(title_text):
         unsafe_allow_html=True
     )
 
+# === UI ===
 st.title(translations["title"][lang])
 uploaded_file = st.file_uploader(label="", type=["jpg", "jpeg", "png", "jfif"], label_visibility="collapsed")
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    col1, col2 = st.columns([1, 2], gap="large")
+    image = fix_orientation(image)  # ✅ Mobil rasm to‘g‘rilash
 
+    col1, col2 = st.columns([1, 2], gap="large")
     with col1:
         st.image(image, caption="📸")
 
@@ -174,39 +187,30 @@ if uploaded_file:
 
                 if drug_info:
                     nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = drug_info
-                else:
-                    nomi = kasallik = instruktsiya = alternativalar = tasir_modda = narx = None
-
-                narx_html = f"<span style='color:#ffffff;'>💵 Narx: {narx}</span>" if narx else ""
-                st.markdown(
-                    f"""
-                    <div style='display: flex; justify-content: space-between; align-items: center; font-size: 22px; font-weight: 600; padding: 15px 8px; background-color: #013220; border-radius: 10px;'>
-                        <span style='color:white;'>💊 Dori nomi: {drug_name_display.upper()}</span>
-                        {narx_html}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.markdown(
-                    f"<div style='font-size: 14px; color: gray;'>OCR aniqlik darajasi: {confidence}%</div>",
-                    unsafe_allow_html=True
-                )
-
-                if drug_info:
-                    section_title(translations["alt_drugs"][lang])
-                    alternativalar = alternativalar.reset_index(drop=True)
-                    alternativalar.index += 1  # 1 dan boshlab raqamlash
-                    st.dataframe(
-                        alternativalar.rename(columns={
-                            "Asl dorining nomi": "Drug",
-                            "Tasir etuvchi modda": "Ingredient",
-                            "Dori shakli": "Form",
-                            "Ishlab chiqargan mamlakat nomi": "Country",
-                            "Narxi (taxminiy)": "Price"
-                        }),
-                        use_container_width=True
+                    narx_html = f"<span style='color:#ffffff;'>💵 Narx: {narx}</span>" if narx else ""
+                    st.markdown(
+                        f"""
+                        <div style='display: flex; justify-content: space-between; align-items: center; font-size: 22px; font-weight: 600; padding: 15px 8px; background-color: #013220; border-radius: 10px;'>
+                            <span style='color:white;'>💊 Dori nomi: {drug_name_display.upper()}</span>
+                            {narx_html}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
                     )
+
+                    st.markdown(
+                        f"<div style='font-size: 14px; color: gray;'>OCR aniqlik darajasi: {confidence}%</div>",
+                        unsafe_allow_html=True
+                    )
+
+                    section_title(translations["alt_drugs"][lang])
+                    st.dataframe(alternativalar.rename(columns={
+                        "Asl dorining nomi": "Drug",
+                        "Tasir etuvchi modda": "Ingredient",
+                        "Dori shakli": "Form",
+                        "Ishlab chiqargan mamlakat nomi": "Country",
+                        "Narxi (taxminiy)": "Price"
+                    }), use_container_width=True)
 
                     section_title(translations["illness"][lang])
                     st.write(kasallik)
@@ -221,14 +225,13 @@ if uploaded_file:
             except Exception as e:
                 st.error(f"❗ {e}")
 
-    # Ogohlantirish
     st.markdown(
-    """
-    <div style='margin-top: 40px; padding: 15px; border-radius: 8px; background-color: #123024; color: #e8f5e9; font-size: 16px; border-left: 6px solid #4caf50;'>
-        ⚠️ <strong>Ogohlantirish:</strong> Ilovada ko‘rsatilgan dori vositalari va ularning qo‘llanilishi faqat ma’lumot berish uchun. To‘g‘ri tashxis va davolash uchun shifokorga murojaat qiling.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <div style='margin-top: 40px; padding: 15px; border-radius: 8px; background-color: #123024; color: #e8f5e9; font-size: 16px; border-left: 6px solid #4caf50;'>
+            ⚠️ <strong>Ogohlantirish:</strong> Ilovada ko‘rsatilgan dori vositalari va ularning qo‘llanilishi faqat ma’lumot berish uchun. To‘g‘ri tashxis va davolash uchun shifokorga murojaat qiling.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 else:
     st.info(translations["upload_label"][lang])
