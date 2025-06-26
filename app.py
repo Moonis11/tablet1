@@ -1,11 +1,18 @@
 import streamlit as st
 import pandas as pd
-from oracle import extract_drug_info_by_cropping
 from PIL import Image, ExifTags
 import re
 from difflib import get_close_matches
+import traceback
 
-# 📲 Mobil rasmni to‘g‘rilash
+MAX_SIZE = (1024, 1024)  # Maksimal rasm o'lchami (resursni tejash uchun)
+
+# Rasmni o'lchamini kichraytirish (thumbnail)
+def resize_image(img):
+    img.thumbnail(MAX_SIZE)
+    return img
+
+# Mobil rasmni to'g'irlash (orientation)
 def fix_orientation(img):
     try:
         for orientation in ExifTags.TAGS.keys():
@@ -24,18 +31,90 @@ def fix_orientation(img):
         pass
     return img
 
-# 🌐 Til sozlamalari
+# CSV faylni yuklash (masalan, alternativa1.csv)
+@st.cache_data
+def load_csv():
+    import os
+    csv_path = "alternativa1.csv"
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"❌ Fayl topilmadi: {csv_path}")
+    df = pd.read_csv(csv_path, encoding="utf-8")
+    df.columns = df.columns.str.strip()
+    if 'Asl dorining nomi' not in df.columns:
+        raise ValueError("❌ CSV faylda 'Asl dorining nomi' ustuni topilmadi.")
+    return df
+
+# Dori nomini taxminiy qidirish uchun fuzzy matching
+def fuzzy_match_drug_name(drug_name, df):
+    all_drugs = df['Asl dorining nomi lower'].tolist()
+    match = get_close_matches(drug_name.lower(), all_drugs, n=1, cutoff=0.7)
+    return match[0] if match else None
+
+# CSV dan dorining to‘liq ma’lumotini olish
+def get_drug_info_from_csv(user_dori, df):
+    user_dori = user_dori.strip().lower()
+    df['Asl dorining nomi lower'] = df['Asl dorining nomi'].astype(str).str.strip().str.lower()
+    df['Tasir etuvchi modda lower'] = df['Tasir etuvchi modda'].astype(str).str.strip().str.lower()
+
+    if user_dori not in df['Asl dorining nomi lower'].values:
+        fuzzy_match = fuzzy_match_drug_name(user_dori, df)
+        if fuzzy_match:
+            user_dori = fuzzy_match
+        else:
+            return None
+
+    row = df[df['Asl dorining nomi lower'] == user_dori].iloc[0]
+    kasalliklar = row.get('Qaysi kasalliklarda qo‘llaniladi', '')
+    instruktsiya = row.get('Instruksiya (foydalanish tartibi)', '')
+    tasir_modda = row.get('Tasir etuvchi modda', '').strip().lower()
+    narx = row.get('Narxi (taxminiy)', '')
+
+    alternativalar = df[
+        (df['Tasir etuvchi modda lower'] == tasir_modda) &
+        (df['Asl dorining nomi lower'] != user_dori)
+    ][[
+        'Asl dorining nomi',
+        'Tasir etuvchi modda',
+        'Dori shakli',
+        'Ishlab chiqargan mamlakat nomi',
+        'Narxi (taxminiy)'
+    ]]
+    return user_dori, kasalliklar, instruktsiya, alternativalar, tasir_modda, narx
+
+# OCR dan chiqqan matndan dori nomini tozalash
+def clean_drug_name(raw_name):
+    cleaned = re.split(r"[\u00AE\u00A9\u2122]", raw_name)[0].strip()
+    cleaned = re.sub(r"[^a-zA-Zа-яА-ЯёЁ0-9\- ]", "", cleaned)
+    return cleaned
+
+# Ruscha kirillni lotinchaga transliteratsiya qilish
+def transliterate_ru_to_lat(text):
+    ru_to_lat = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+                 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+                 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+                 'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+                 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+                 'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+                 'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+                 'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+                 'Ф': 'F', 'Х': 'X', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
+                 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'}
+    return ''.join(ru_to_lat.get(c, c) for c in text)
+
+# Sarlavha uchun maxsus HTML
+def section_title(title_text):
+    st.markdown(
+        f"""
+        <div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>{title_text}</div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Til sozlamalari
 languages = {
     "🇺🇿 Uzbek": "uz",
     "🇷🇺 Русский": "ru",
     "en English": "en"
-}
-
-# 📱 Qurilma turlari
-devices = {
-    "💻 Kompyuter": "desktop",
-    "📱 Telefon": "mobile",
-    "📊 Planshet": "tablet"
 }
 
 translations = {
@@ -84,94 +163,8 @@ translations = {
 st.set_page_config(page_title="Tablet App", layout="wide")
 st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
-# — Til va qurilma tanlash —
-
-lang_choice = st.sidebar.radio("Til / Язык / Language:", list(languages.keys()))
-device_choice = st.sidebar.radio("Qurilma turi / Device type:", list(devices.keys()))
-
+lang_choice = st.sidebar.radio("Til / Язык / Language  :", list(languages.keys()))
 lang = languages[lang_choice]
-device = devices[device_choice]
-
-st.sidebar.markdown(f"**Tanlangan til:** {lang_choice}")
-st.sidebar.markdown(f"**Tanlangan qurilma:** {device_choice}")
-
-# — CSV faylni yuklash —
-
-@st.cache_data
-def load_csv():
-    import os
-    csv_path = "alternativa1.csv"
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"❌ Fayl topilmadi: {csv_path}")
-    df = pd.read_csv(csv_path, encoding="utf-8")
-    df.columns = df.columns.str.strip()
-    if 'Asl dorining nomi' not in df.columns:
-        raise ValueError("❌ CSV faylda 'Asl dorining nomi' ustuni topilmadi.")
-    return df
-
-def fuzzy_match_drug_name(drug_name, df):
-    all_drugs = df['Asl dorining nomi lower'].tolist()
-    match = get_close_matches(drug_name.lower(), all_drugs, n=1, cutoff=0.7)
-    return match[0] if match else None
-
-def get_drug_info_from_csv(user_dori, df):
-    user_dori = user_dori.strip().lower()
-    df['Asl dorining nomi lower'] = df['Asl dorining nomi'].astype(str).str.strip().str.lower()
-    df['Tasir etuvchi modda lower'] = df['Tasir etuvchi modda'].astype(str).str.strip().str.lower()
-
-    if user_dori not in df['Asl dorining nomi lower'].values:
-        fuzzy_match = fuzzy_match_drug_name(user_dori, df)
-        if fuzzy_match:
-            user_dori = fuzzy_match
-        else:
-            return None
-
-    row = df[df['Asl dorining nomi lower'] == user_dori].iloc[0]
-    kasalliklar = row.get('Qaysi kasalliklarda qo‘llaniladi', '')
-    instruktsiya = row.get('Instruksiya (foydalanish tartibi)', '')
-    tasir_modda = row.get('Tasir etuvchi modda', '').strip().lower()
-    narx = row.get('Narxi (taxminiy)', '')
-
-    alternativalar = df[
-        (df['Tasir etuvchi modda lower'] == tasir_modda) &
-        (df['Asl dorining nomi lower'] != user_dori)
-    ][[
-        'Asl dorining nomi',
-        'Tasir etuvchi modda',
-        'Dori shakli',
-        'Ishlab chiqargan mamlakat nomi',
-        'Narxi (taxminiy)'
-    ]]
-    return user_dori, kasalliklar, instruktsiya, alternativalar, tasir_modda, narx
-
-def clean_drug_name(raw_name):
-    cleaned = re.split(r"[\u00AE\u00A9\u2122]", raw_name)[0].strip()
-    cleaned = re.sub(r"[^a-zA-Zа-яА-ЯёЁ0-9\- ]", "", cleaned)
-    return cleaned
-
-def transliterate_ru_to_lat(text):
-    ru_to_lat = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-                 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-                 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-                 'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
-                 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-                 'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
-                 'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
-                 'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
-                 'Ф': 'F', 'Х': 'X', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
-                 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'}
-    return ''.join(ru_to_lat.get(c, c) for c in text)
-
-def section_title(title_text):
-    st.markdown(
-        f"""
-        <div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>{title_text}</div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# === UI ===
-st.title(translations["title"][lang])
 
 uploaded_file = st.file_uploader(label="", type=["jpg", "jpeg", "png", "jfif"], label_visibility="collapsed")
 
@@ -187,7 +180,10 @@ if uploaded_file:
 
         with col2:
             with st.spinner(translations["detecting"][lang]):
+                # BU YERGA SIZNING OCR FUNKSIYANGIZNI JOYLANG
+                # Masalan:
                 drug_text, confidence = extract_drug_info_by_cropping(image)
+
                 cleaned = clean_drug_name(drug_text)
                 has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
 
@@ -247,8 +243,6 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Xatolik yuz berdi: {e}")
-        import traceback
         st.text(traceback.format_exc())
-
 else:
     st.info(translations["upload_label"][lang])
