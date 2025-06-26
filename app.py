@@ -165,7 +165,7 @@ if uploaded_file:
 
     col1, col2 = st.columns([1, 2], gap="large")
     with col1:
-        st.image(image, caption="📸", use_column_width=True)
+        st.image(image, caption="📸", use_container_width=True)
 
     with col2:
         with st.spinner(translations["detecting"][lang]):
