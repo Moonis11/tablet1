@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from oracle import extract_drug_info_by_cropping  # Sizning OCR funksiyangiz
+from oracle import extract_drug_info_by_cropping
+ # Sizning OCR funksiyangiz
 from PIL import Image, ExifTags
 import re
 from difflib import get_close_matches
