@@ -1,2 +1,5 @@
-[experimental]
-use_uv = false
+[server]
+headless = true
+enableCORS = false
+port = 8501
+
