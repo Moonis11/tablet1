@@ -74,11 +74,30 @@ translations = {
     }
 }
 
+# CSS mobilga moslash uchun
+st.markdown(
+    """
+    <style>
+    @media only screen and (max-width: 600px) {
+        .stMarkdown div, .stDataFrame table {
+            font-size: 12px !important;
+        }
+        div[role="list"] > div {
+            font-size: 12px !important;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.set_page_config(page_title="Tablet App", layout="wide")
 st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
 lang_choice = st.sidebar.radio("Til / Язык / Language  :", list(languages.keys()))
 lang = languages[lang_choice]
+
+device = st.sidebar.selectbox("Qurilma turi / Device type:", ["Kompyuter / Planshet", "Telefon"])
 
 @st.cache_data
 def load_csv():
@@ -204,17 +223,34 @@ if uploaded_file:
                     )
 
                     section_title(translations["alt_drugs"][lang])
-                    st.dataframe(
-                        alternativalar.rename(columns={
-                            "Asl dorining nomi": "Drug",
-                            "Tasir etuvchi modda": "Ingredient",
-                            "Dori shakli": "Form",
-                            "Ishlab chiqargan mamlakat nomi": "Country",
-                            "Narxi (taxminiy)": "Price"
-                        }),
-                        use_container_width=True,
-                        height=220
-                    )
+
+                    # Mobil uchun ustunlarni qisqartirish
+                    if device == "Telefon":
+                        st.dataframe(
+                            alternativalar[[
+                                "Asl dorining nomi",
+                                "Tasir etuvchi modda",
+                                "Narxi (taxminiy)"
+                            ]].rename(columns={
+                                "Asl dorining nomi": "Drug",
+                                "Tasir etuvchi modda": "Ingredient",
+                                "Narxi (taxminiy)": "Price"
+                            }),
+                            use_container_width=True,
+                            height=220
+                        )
+                    else:
+                        st.dataframe(
+                            alternativalar.rename(columns={
+                                "Asl dorining nomi": "Drug",
+                                "Tasir etuvchi modda": "Ingredient",
+                                "Dori shakli": "Form",
+                                "Ishlab chiqargan mamlakat nomi": "Country",
+                                "Narxi (taxminiy)": "Price"
+                            }),
+                            use_container_width=True,
+                            height=300
+                        )
 
                     section_title(translations["illness"][lang])
                     st.write(kasallik)
