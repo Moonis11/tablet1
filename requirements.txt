@@ -1,6 +1,7 @@
 streamlit
 pillow>=10.0.0
 opencv-python-headless
+easyocr
 setuptools>=68.0.0
 wheel
 pip>=23.0
