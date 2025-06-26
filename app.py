@@ -31,6 +31,13 @@ languages = {
     "en English": "en"
 }
 
+# 📱 Qurilma turlari
+devices = {
+    "💻 Kompyuter": "desktop",
+    "📱 Telefon": "mobile",
+    "📊 Planshet": "tablet"
+}
+
 translations = {
     "title": {
         "uz": "🧪 Tablet: Dori rasmi orqali aniqlash",
@@ -74,30 +81,21 @@ translations = {
     }
 }
 
-# CSS mobilga moslash uchun
-st.markdown(
-    """
-    <style>
-    @media only screen and (max-width: 600px) {
-        .stMarkdown div, .stDataFrame table {
-            font-size: 12px !important;
-        }
-        div[role="list"] > div {
-            font-size: 12px !important;
-        }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 st.set_page_config(page_title="Tablet App", layout="wide")
 st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
-lang_choice = st.sidebar.radio("Til / Язык / Language  :", list(languages.keys()))
-lang = languages[lang_choice]
+# — Til va qurilma tanlash —
 
-device = st.sidebar.selectbox("Qurilma turi / Device type:", ["Kompyuter / Planshet", "Telefon"])
+lang_choice = st.sidebar.radio("Til / Язык / Language:", list(languages.keys()))
+device_choice = st.sidebar.radio("Qurilma turi / Device type:", list(devices.keys()))
+
+lang = languages[lang_choice]
+device = devices[device_choice]
+
+st.sidebar.markdown(f"**Tanlangan til:** {lang_choice}")
+st.sidebar.markdown(f"**Tanlangan qurilma:** {device_choice}")
+
+# — CSV faylni yuklash —
 
 @st.cache_data
 def load_csv():
@@ -167,22 +165,34 @@ def transliterate_ru_to_lat(text):
 def section_title(title_text):
     st.markdown(
         f"""
-        <div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
-            {title_text}
-        </div>
+        <div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>{title_text}</div>
         """,
         unsafe_allow_html=True
     )
 
 # === UI ===
 st.title(translations["title"][lang])
+
 uploaded_file = st.file_uploader(label="", type=["jpg", "jpeg", "png", "jfif"], label_visibility="collapsed")
 
 if uploaded_file:
     image = Image.open(uploaded_file)
     image = fix_orientation(image)  # ✅ Mobil rasm to‘g‘rilash
 
-    col1, col2 = st.columns([1, 2], gap="large")
+    # Qurilmaga qarab layout va shriftlar sozlash
+    if device == "mobile":
+        col1, col2 = st.columns([1, 3], gap="small")
+        fontsize_title = "18px"
+        df_height = 220
+    elif device == "tablet":
+        col1, col2 = st.columns([1, 2], gap="medium")
+        fontsize_title = "20px"
+        df_height = 300
+    else:  # desktop
+        col1, col2 = st.columns([1, 2], gap="large")
+        fontsize_title = "22px"
+        df_height = 400
+
     with col1:
         st.image(image, caption="📸", use_container_width=True)
 
@@ -206,10 +216,10 @@ if uploaded_file:
 
                 if drug_info:
                     nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = drug_info
-                    narx_html = f"<span style='color:#ffffff; font-weight:600;'>💵 Narx: {narx}</span>" if narx else ""
+                    narx_html = f"<span style='color:#ffffff; font-weight:700;'>💵 Narx: {narx}</span>" if narx else ""
                     st.markdown(
                         f"""
-                        <div style='display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 700; padding: 15px 12px; background-color: #013220; border-radius: 12px; margin-bottom: 10px; color: white; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
+                        <div style='display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; font-size: {fontsize_title}; font-weight: 700; padding: 15px 12px; background-color: #013220; border-radius: 12px; margin-bottom: 10px; color: white; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'>
                             <span style='word-break: break-word;'>💊 Dori nomi: {drug_name_display.upper()}</span>
                             {narx_html}
                         </div>
@@ -223,34 +233,17 @@ if uploaded_file:
                     )
 
                     section_title(translations["alt_drugs"][lang])
-
-                    # Mobil uchun ustunlarni qisqartirish
-                    if device == "Telefon":
-                        st.dataframe(
-                            alternativalar[[
-                                "Asl dorining nomi",
-                                "Tasir etuvchi modda",
-                                "Narxi (taxminiy)"
-                            ]].rename(columns={
-                                "Asl dorining nomi": "Drug",
-                                "Tasir etuvchi modda": "Ingredient",
-                                "Narxi (taxminiy)": "Price"
-                            }),
-                            use_container_width=True,
-                            height=220
-                        )
-                    else:
-                        st.dataframe(
-                            alternativalar.rename(columns={
-                                "Asl dorining nomi": "Drug",
-                                "Tasir etuvchi modda": "Ingredient",
-                                "Dori shakli": "Form",
-                                "Ishlab chiqargan mamlakat nomi": "Country",
-                                "Narxi (taxminiy)": "Price"
-                            }),
-                            use_container_width=True,
-                            height=300
-                        )
+                    st.dataframe(
+                        alternativalar.rename(columns={
+                            "Asl dorining nomi": "Drug",
+                            "Tasir etuvchi modda": "Ingredient",
+                            "Dori shakli": "Form",
+                            "Ishlab chiqargan mamlakat nomi": "Country",
+                            "Narxi (taxminiy)": "Price"
+                        }),
+                        use_container_width=True,
+                        height=df_height
+                    )
 
                     section_title(translations["illness"][lang])
                     st.write(kasallik)
