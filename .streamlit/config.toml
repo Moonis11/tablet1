@@ -1,7 +1,9 @@
 [server]
 headless = true
 enableCORS = false
-port = 8501
+port = $PORT
+enableXsrfProtection = false
+
 
 [general]
 python_version = "3.10"
