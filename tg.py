@@ -4,10 +4,13 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Dispatcher, CallbackQueryHandler, CommandHandler, ContextTypes
 import logging
 import os
+from dotenv import load_dotenv
 
-# 🔐 Bot token
-TOKEN = "7962351903:AAFnNXtOH714saoaAuRBDWsRDiETllmI19s"
-TABLET_APP_URL = "https://rofuu8l7mqgtkt5sqdjwid.streamlit.app/"
+
+load_dotenv()  # .env faylni yuklash
+
+TOKEN = os.getenv("BOT_TOKEN")
+TABLET_APP_URL = os.getenv("APP_URL")
 
 # 🌍 Tillar
 languages = {
