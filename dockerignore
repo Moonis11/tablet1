@@ -1,7 +1,6 @@
-__pycache__/
 *.csv
-*.png
-*.jpg
-.env
-*.pt
+__pycache__/
+*.pyc
+.DS_Store
 *.pkl
+.env
