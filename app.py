@@ -159,9 +159,9 @@ translations = {
         "en": "📋 Conditions Treated"
     },
     "usage": {
-        "uz": "💊 Instruksiya",
-        "ru": "💊 Инструкция",
-        "en": "💊 Instructions"
+        "uz": "🧾 Instruksiya",
+        "ru": "🧾 Инструкция",
+        "en": "🧾 Instructions"
     },
     "not_detected": {
         "uz": "❗ Dori nomi aniqlanmadi. Rasmni aniqroq yuklang.",
@@ -170,7 +170,7 @@ translations = {
     },
     
     "disclaimer": {
-        "uz": "📌 Diqqat: Bu dastur tibbiy maslahat o‘rnini bosa olmaydi. Har qanday dori vositasini qabul qilishdan oldin shifokoringiz bilan maslahatlashishingiz zarur.",
+        "uz": "📌 Diqqat: Bu dastur tibbiy maslahat o‘rnini bosa olmaydi. Har qanday dori vositasini qabul qilishdan oldin shifokor bilan maslahatlashing.",
         "ru": "📌 Внимание: Это приложение не заменяет консультацию врача. Проконсультируйтесь с врачом перед приемом любых лекарств.",
         "en": "📌 Note: This app does not replace medical advice. Always consult your doctor before taking any medication."
     },
@@ -239,7 +239,7 @@ if uploaded_file:
                     st.markdown(formatted_instruksiya)
 
                     st.markdown(
-                        f"""<div style='width: 100%; max-width: 900px; margin: 40px auto 20px auto; padding: 18px 24px; background-color: #14532d;
+                        f"""<div style='width: 100%; margin: 40px auto 20px auto; padding: 18px 24px; background-color: #14532d;
                        color: #ffffff; font-size: 17px;   font-weight: 600; border-radius: 12px;  font-family: "Segoe UI", Tahoma, sans-serif;  text-align: center;
                        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);'>
                        {translations['disclaimer'][lang]} </div> """, unsafe_allow_html=True)
