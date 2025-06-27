@@ -126,11 +126,11 @@ if "uploaded_image" not in st.session_state:
 st.set_page_config(page_title="Tablet App", layout="wide")
 st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
-languages = {"🇺🇿 Uzbek": "uz", "🇷🇺 Русский": "ru", "🇬🇧 English": "en"}
+languages = {"Uzbek": "uz", "Русский": "ru", "English": "en"}
 translations = {
     "title": {"uz": "🧪 TabletAI", "ru": "🧪 ТаблетAI", "en": "🧪 TabletAI"},
     "upload_label": {"uz": "Rasm yuklang", "ru": "Загрузите изображение", "en": "Upload an image"},
-    "detecting": {"uz": "🔍 Dori nomi aniqlanmoqda...", "ru": "🔍 Определение названия лекарства...", "en": "🔍 Detecting drug name..."},
+    "detecting": {"uz": "🔍 Dori nomi aniqligi...", "ru": "🔍 Точность названия препарата...", "en": "🔍 Drug name accuracy..."},
     "not_found": {"uz": "❗ Bu dori CSVda topilmadi.", "ru": "❗ Это лекарство не найдено в таблице.", "en": "❗ This drug was not found in the database."},
     "alt_drugs": {"uz": "🔄 Alternativ dorilar (mamlakati bilan)", "ru": "🔄 Альтернативные лекарства (с указанием страны)", "en": "🔄 Alternative Drugs (with country)"},
     "illness": {"uz": "📋 Qaysi kasalliklarda qo‘llaniladi", "ru": "📋 При каких болезнях используется", "en": "📋 Conditions Treated"},
