@@ -60,40 +60,44 @@ def get_drug_info_from_csv(user_dori, df, lang):
 
     row = df[df['Asl dorining nomi lower'] == user_dori].iloc[0]
 
+    # Tilga qarab ustunlarni tanlash
     if lang == "ru":
-      nomi = row.get("Asl dorining nomi", "")
-      kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi rus", "")
-      instruktsiya = row.get("Instruksiya (foydalanish tartibi  rus", "")
-      form_col = "Dori shakli ruscha"
-      country_col = "Ishlab chiqargan mamlakat nomi rus"
+        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi rus", "")
+        instruktsiya = row.get("Instruksiya (foydalanish tartibi  rus", "")
+        form_col = "Dori shakli ruscha"
+        country_col = "Ishlab chiqargan mamlakat nomi rus"
     elif lang == "en":
-      nomi = row.get("Asl dorining nomi", "")
-      kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi eng", "")
-      instruktsiya = row.get("Instruksiya (foydalanish tartibi)  eng", "")
-      form_col = "Dori shakli eng"
-      country_col = "Ishlab chiqargan mamlakat nomi eng"
+        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi eng", "")
+        instruktsiya = row.get("Instruksiya (foydalanish tartibi)  eng", "")
+        form_col = "Dori shakli eng"
+        country_col = "Ishlab chiqargan mamlakat nomi eng"
     else:
-      nomi = row.get("Asl dorining nomi", "")
-      kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi", "")
-      instruktsiya = row.get("Instruksiya (foydalanish tartibi)", "")
-      form_col = "Dori shakli"
-      country_col = "Ishlab chiqargan mamlakat nomi"
+        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi", "")
+        instruktsiya = row.get("Instruksiya (foydalanish tartibi)", "")
+        form_col = "Dori shakli"
+        country_col = "Ishlab chiqargan mamlakat nomi"
 
-
-    tasir_modda = row.get("Tasir etuvchi modda", "").strip().lower()
+    nomi = row.get("Asl dorining nomi", "")
     narx = row.get("Narxi (taxminiy)", "")
+    tasir_modda = row.get("Tasir etuvchi modda", "").strip().lower()
+
+    # Agar form_col yoki country_col CSVda mavjud bo‘lmasa, xatolik bermasligi uchun tekshiramiz
+    if form_col not in df.columns or country_col not in df.columns:
+        form_col = "Dori shakli"
+        country_col = "Ishlab chiqargan mamlakat nomi"
 
     alternativalar = df[
         (df['Tasir etuvchi modda lower'] == tasir_modda) &
         (df['Asl dorining nomi lower'] != user_dori)
     ][[
-        "Asl dorining nomi", form_col, country_col, "Narxi (taxminiy)"
+        "Asl dorining nomi", "Tasir etuvchi modda", form_col, country_col, "Narxi (taxminiy)"
     ]].rename(columns={
         form_col: "Dori shakli",
         country_col: "Mamlakat"
     })
 
     return nomi, kasallik, instruktsiya, alternativalar, narx
+
 
 def clean_drug_name(raw_name):
     cleaned = re.split(r"[\u00AE\u00A9\u2122]", raw_name)[0].strip()
