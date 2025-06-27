@@ -201,8 +201,9 @@ if uploaded_file:
                 has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
                 drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
 
-                df = load_csv()
+                df = pd.read_csv("alternativa1.csv")
                 result = get_drug_info_from_csv(drug_name, df, lang)
+
 
                 if result:
                     nomi, kasallik, instruktsiya, alternativalar, narx = result
