@@ -168,11 +168,13 @@ translations = {
         "ru": "❗ Не удалось определить название. Загрузите более чёткое изображение.",
         "en": "❗ Could not detect the drug name. Please upload a clearer image."
     },
+    
     "disclaimer": {
-        "uz": "ℹ️ Ushbu ma'lumotlar faqat ma'lumot uchun. Shifokor bilan maslahatlashish zarur.",
-        "ru": "ℹ️ Эти данные предоставлены только в информационных целях. Проконсультируйтесь с врачом.",
-        "en": "ℹ️ This information is for informational purposes only. Please consult a doctor."
+        "uz": "📌 Diqqat: Bu dastur tibbiy maslahat o‘rnini bosa olmaydi. Har qanday dori vositasini qabul qilishdan oldin shifokoringiz bilan maslahatlashishingiz zarur.",
+        "ru": "📌 Внимание: Это приложение не заменяет консультацию врача. Проконсультируйтесь с врачом перед приемом любых лекарств.",
+        "en": "📌 Note: This app does not replace medical advice. Always consult your doctor before taking any medication."
     },
+
     "price_label": {
         "uz": "💵 Narxi",
         "ru": "💵 Цена",
