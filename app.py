@@ -66,13 +66,13 @@ def get_drug_info_from_csv(user_dori, df, lang):
       instruktsiya = row.get("Instruksiya (foydalanish tartibi  rus", "")
       form_col = "Dori shakli ruscha"
       country_col = "Ishlab chiqargan mamlakat nomi rus"
-   elif lang == "en":
+    elif lang == "en":
       nomi = row.get("Asl dorining nomi", "")
       kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi eng", "")
       instruktsiya = row.get("Instruksiya (foydalanish tartibi)  eng", "")
       form_col = "Dori shakli eng"
       country_col = "Ishlab chiqargan mamlakat nomi eng"
-    else:
+     else:
       nomi = row.get("Asl dorining nomi", "")
       kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi", "")
       instruktsiya = row.get("Instruksiya (foydalanish tartibi)", "")
