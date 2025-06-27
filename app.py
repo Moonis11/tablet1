@@ -86,14 +86,13 @@ def get_drug_info_from_csv(user_dori, df, lang):
         (df['Tasir etuvchi modda lower'] == tasir_modda) &
         (df['Asl dorining nomi lower'] != user_dori)
     ][[
-        "Asl dorining nomi", "Tasir etuvchi modda",
-        form_col, country_col, "Narxi (taxminiy)"
+        "Asl dorining nomi", form_col, country_col, "Narxi (taxminiy)"
     ]].rename(columns={
         form_col: "Dori shakli",
         country_col: "Mamlakat"
     })
 
-    return nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx
+    return nomi, kasallik, instruktsiya, alternativalar, narx
 
 def clean_drug_name(raw_name):
     cleaned = re.split(r"[\u00AE\u00A9\u2122]", raw_name)[0].strip()
