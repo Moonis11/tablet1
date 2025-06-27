@@ -219,7 +219,7 @@ if uploaded_file:
                     st.write(kasallik)
 
                     section_title(translations["usage"][lang])
-                    formatted_instruksiya = "\n".join([f"{i+1}. ➤ {line.strip()}" for i, line in enumerate(instruktsiya.split("\n")) if line.strip()])
+                    formatted_instruksiya = "\n".join([f"{i+1}.  {line.strip()}" for i, line in enumerate(instruktsiya.split("\n")) if line.strip()])
                     st.markdown(formatted_instruksiya)
 
                     # Diskleymer
