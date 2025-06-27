@@ -236,7 +236,13 @@ if uploaded_file:
                     ])
                     st.markdown(formatted_instruksiya)
 
-                    st.markdown(f"<div style='font-size:12px; color: #999999; margin-top: 30px;'>{translations['disclaimer'][lang]}</div>", unsafe_allow_html=True)
+                    st.markdown(
+                             f"""
+                           <div style='background-color: #14532d; color: white; padding: 14px 20px;
+                           font-size: 16px; font-weight: 600; border-radius: 10px;
+                            margin-top: 30px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, sans-serif;'>
+                            {translations['disclaimer'][lang]}
+                            </div> """,   unsafe_allow_html=True)
 
                 else:
                     st.warning(translations["not_found"][lang])
