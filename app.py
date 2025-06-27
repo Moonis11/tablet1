@@ -173,6 +173,10 @@ if uploaded_file:
                     # 💊 Dori nomi va 💵 narxi — fon rangi qoramtir yashil (#123024)
                     components.html(f"""
                         <div style="
+                           display: flex;
+                           flex-wrap: wrap;
+                           justify-content: space-between;
+                           align-items: center;
                            background-color: #123024;
                            color: white;
                            padding: 16px 24px;
@@ -182,13 +186,13 @@ if uploaded_file:
                            margin-top: 20px;
                            margin-bottom: 20px;
                         ">
-                            <div style="font-size: 20px; ">
+                            <div style="font-size: 20px; flex: 1 1 200px;">
                                  {translations["drug_name"][lang]}: {nomi}
                             </div>
-                            <div style="color: #bbb; font-size: 13px; margin-top: 4px;">
-                                 OCR aniqlik: {confidence}%
+                            <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
+                                 {translations["price_label"][lang]}: {narx}
                             </div>
-                            <div style="font-size: 18px; margin-top: 10px;">
+                            <div style="width: 100%; font-size: 16px; margin-top: 10px; display: none;" class="mobile-price">
                                  {translations["price_label"][lang]}: {narx}
                             </div>
                         </div>
@@ -207,35 +211,8 @@ if uploaded_file:
                     # OCR aniqlik
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
-                    section_title(translations["alt_drugs"][lang])
-                    alternativalar.index = range(1, len(alternativalar) + 1)
-                    st.dataframe(alternativalar, use_container_width=True, height=250)
+                    # Qolgan qismlar (alternativalar, kasallik, instruktsiya) shu yerga yoziladi...
 
-                    section_title(translations["illness"][lang])
-                    st.write(kasallik)
-
-                    section_title(translations["usage"][lang])
-                    formatted_instruksiya = "<br>".join([re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in instruktsiya.split("\n") if line.strip()])
-                    st.markdown(formatted_instruksiya, unsafe_allow_html=True)
-
-                    # Diskleymer
-                    st.markdown(f"""
-                        <div style='
-                            width: 100%;
-                            margin: 40px auto 20px auto;
-                            padding: 18px 24px;
-                            background-color: #123024;
-                            color: #ffffff;
-                            font-size: 17px;
-                            font-weight: 600;
-                            border-radius: 12px;
-                            font-family: "Segoe UI", Tahoma, sans-serif;
-                            text-align: center;
-                            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-                        '>
-                            {translations['disclaimer'][lang]}
-                        </div>
-                    """, unsafe_allow_html=True)
                 else:
                     st.warning(translations["not_found"][lang])
     except Exception as e:
