@@ -169,9 +169,9 @@ if uploaded_file:
                 result = get_drug_info_from_csv(drug_name, df, lang)
 
                 if result:
-                    nomi, kasallik, instruktsiya, alternativalar, _, narx = result
+                    nomi, kasallik, instruktsiya, alternativalar, _tasir_modda, narx = result  # 6 ta unpack ✅
 
-                    # ✅ Faqat dori nomi va narx (faol modda yo‘q)
+                    # ✅ Faqat dori nomi va narx (faol modda chiqarilmaydi)
                     components.html(f"""
                         <div style="
                            display: flex;
@@ -209,20 +209,24 @@ if uploaded_file:
                         </style>
                     """, height=130)
 
-                    # OCR aniqlik
+                    # OCR aniqligi (pastida)
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
+                    # 🔄 Alternativalar
                     section_title(translations["alt_drugs"][lang])
                     alternativalar.index = range(1, len(alternativalar) + 1)
                     st.dataframe(alternativalar, use_container_width=True, height=250)
 
+                    # 📋 Kasallik
                     section_title(translations["illness"][lang])
                     st.write(kasallik)
 
+                    # 🧾 Instruksiya
                     section_title(translations["usage"][lang])
                     formatted_instruksiya = "\n".join([f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()])
                     st.markdown(formatted_instruksiya)
 
+                    # 📌 Diskleymer
                     st.markdown(f"""
                         <div style='
                             width: 100%;
@@ -245,3 +249,4 @@ if uploaded_file:
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
+
