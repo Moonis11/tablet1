@@ -131,6 +131,7 @@ def section_title(title_text):
         unsafe_allow_html=True
     )
    
+uploaded_file = st.file_uploader("Rasm yuklang", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
