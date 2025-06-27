@@ -35,10 +35,12 @@ def fix_orientation(img):
 
 
 # CSV yuklash
+
 @st.cache_data
 def load_drug_names():
     df = pd.read_csv("alternativa1.csv")
     return df["Asl dorining nomi"].str.lower().str.strip().tolist()
+
 
 drug_names = load_drug_names()
 
