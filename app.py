@@ -264,10 +264,10 @@ if uploaded_file:
                              align-items: center;
                              text-align: center;
                              padding: 30px;
-                             background-color: #fff3cd;
+                             background-color: #123024;
                              border: 1px solid #ffeeba;
                              border-radius: 10px;
-                             color: #856404;
+                             color: white;
                              font-size: 17px;
                              font-weight: 500;
                              font-family: "Segoe UI", sans-serif;
