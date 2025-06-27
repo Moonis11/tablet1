@@ -43,17 +43,23 @@ def load_csv():
 
 import re
 
-def save_unrecognized_image(image, detected_text):
-    os.makedirs("unrecognized", exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Faqat ruxsat etilgan belgilarni qoldirish (harf, raqam, _, -)
-    safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
-    safe_text = safe_text[:30]
-    
-    filename = f"unrecognized/{safe_text}_{timestamp}.png"
-    image.save(filename)
-    print(f"Yangi noma'lum rasm saqlandi: {filename}")
+from PIL import Image
+import pytesseract
+import pandas as pd
+
+# CSV yuklash
+df = pd.read_csv("alternativa1.csv")
+drug_names = df["Asl dorining nomi"].str.lower().str.strip().tolist()
+
+# Yuklangan rasmni o'qish
+image = Image.open("upload_image.jpg")
+detected_text = pytesseract.image_to_string(image).strip().lower()
+
+# CSV'dan tekshirish
+if any(drug in detected_text for drug in drug_names):
+    print("✅ Dori topildi:", detected_text)
+else:
+    save_unrecognized_image(image, detected_text)  # bu siz yozgan funksiya
 
 
 
