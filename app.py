@@ -173,10 +173,6 @@ if uploaded_file:
                     # 💊 Dori nomi va 💵 narxi — fon rangi qoramtir yashil (#123024)
                     components.html(f"""
                         <div style="
-                           display: flex;
-                           flex-wrap: wrap;
-                           justify-content: space-between;
-                           align-items: center;
                            background-color: #123024;
                            color: white;
                            padding: 16px 24px;
@@ -186,13 +182,13 @@ if uploaded_file:
                            margin-top: 20px;
                            margin-bottom: 20px;
                         ">
-                            <div style="font-size: 20px; flex: 1 1 200px;">
+                            <div style="font-size: 20px; ">
                                  {translations["drug_name"][lang]}: {nomi}
                             </div>
-                            <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
-                                 {translations["price_label"][lang]}: {narx}
+                            <div style="color: #bbb; font-size: 13px; margin-top: 4px;">
+                                 OCR aniqlik: {confidence}%
                             </div>
-                            <div style="width: 100%; font-size: 16px; margin-top: 10px; display: none;" class="mobile-price">
+                            <div style="font-size: 18px; margin-top: 10px;">
                                  {translations["price_label"][lang]}: {narx}
                             </div>
                         </div>
