@@ -257,8 +257,25 @@ if uploaded_file:
                         </div>
                     """, unsafe_allow_html=True)
                 else:
-                    st.warning(translations["not_found"][lang])
-
+                    st.markdown(f"""
+                         <div style='
+                             display: flex;
+                             justify-content: center;
+                             align-items: center;
+                             text-align: center;
+                             padding: 30px;
+                             background-color: #fff3cd;
+                             border: 1px solid #ffeeba;
+                             border-radius: 10px;
+                             color: #856404;
+                             font-size: 17px;
+                             font-weight: 500;
+                             font-family: "Segoe UI", sans-serif;
+                             margin-top: 40px;
+                        '>
+                            {translations["not_found"][lang]}
+                         </div>
+                         """, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
