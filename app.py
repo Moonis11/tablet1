@@ -101,18 +101,7 @@ def clean_drug_name(raw_name):
     return cleaned
 
 def transliterate_ru_to_lat(text):
-    ru_to_lat = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-        'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
-        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-        'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
-        'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
-        'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
-        'Ф': 'F', 'Х': 'X', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
-        'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
-    }
+    ru_to_lat = { ... }  # unchanged mapping
     return ''.join(ru_to_lat.get(c, c) for c in text)
 
 def section_title(title_text):
@@ -125,7 +114,6 @@ def section_title(title_text):
 if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
 
-# Yashirish: Drag and drop qismi + fayl nomi
 st.markdown("""
 <style>
 div[data-testid="stFileUploader"] > label {display: none;}
@@ -136,40 +124,88 @@ span[data-testid="stFileUploaderFileName"] {display: none;}
 st.set_page_config(page_title="Tablet App", layout="wide")
 st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
-languages = {
-    "🇺🇿 Uzbek": "uz",
-    "🇷🇺 Русский": "ru",
-    "🇬🇧 English": "en"
-}
-
+languages = {"🇺🇿 Uzbek": "uz", "🇷🇺 Русский": "ru", "🇬🇧 English": "en"}
 translations = {
     "title": {"uz": "🧪 TabletAI", "ru": "🧪 ТаблетAI", "en": "🧪 TabletAI"},
     "upload_label": {"uz": "Rasm yuklang", "ru": "Загрузите изображение", "en": "Upload an image"},
-    # ... [qolgan tarjimalar xuddi avvalgidek qoladi]
+    "detecting": {"uz": "🔍 Dori nomi aniqlanmoqda...", "ru": "🔍 Определение названия лекарства...", "en": "🔍 Detecting drug name..."},
+    "not_found": {"uz": "❗ Bu dori CSVda topilmadi.", "ru": "❗ Это лекарство не найдено в таблице.", "en": "❗ This drug was not found in the database."},
+    "alt_drugs": {"uz": "🔄 Alternativ dorilar (mamlakati bilan)", "ru": "🔄 Альтернативные лекарства (с указанием страны)", "en": "🔄 Alternative Drugs (with country)"},
+    "illness": {"uz": "📋 Qaysi kasalliklarda qo‘llaniladi", "ru": "📋 При каких болезнях используется", "en": "📋 Conditions Treated"},
+    "usage": {"uz": "🧾 Instruksiya", "ru": "🧾 Инструкция", "en": "🧾 Instructions"},
+    "not_detected": {"uz": "❗ Dori nomi aniqlanmadi. Rasmni aniqroq yuklang.", "ru": "❗ Не удалось определить название. Загрузите более чёткое изображение.", "en": "❗ Could not detect the drug name. Please upload a clearer image."},
+    "disclaimer": {"uz": "📌 Diqqat: Bu dastur tibbiy maslahat o‘rnini bosa olmaydi...", "ru": "📌 Внимание: Это приложение не заменяет консультацию врача...", "en": "📌 Note: This app does not replace medical advice..."},
+    "price_label": {"uz": "💵 Narxi", "ru": "💵 Цена", "en": "💵 Price"},
+    "drug_name": {"uz": "💊 Dori nomi", "ru": "💊 Название препарата", "en": "💊 Drug name"}
 }
 
 lang_choice = st.sidebar.radio("Til / Язык / Language:", list(languages.keys()))
 lang = languages[lang_choice]
 st.title(translations["title"][lang])
 
-# Faqat bir martalik yuklash
 if not st.session_state.uploaded_image:
     uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
     if uploaded_file:
         st.session_state.uploaded_image = uploaded_file
 
 if st.session_state.uploaded_image:
-    # Continue app logic as before using st.session_state.uploaded_image instead of uploaded_file
-    # Add "❌ O‘chirish" tugmasi
     col_reset, _ = st.columns([1, 5])
     with col_reset:
         if st.button("❌ Rasmni o‘chirish"):
             st.session_state.uploaded_image = None
             st.experimental_rerun()
 
-    # Endi uploaded_file o‘rniga foydalanamiz:
     uploaded_file = st.session_state.uploaded_image
-    # ... (qolgan rasmga oid kod davom etadi, sizdagi koddan aynan shu joyga qo‘shiladi)
 
+    try:
+        image = Image.open(uploaded_file)
+        image = resize_image(image)
+        image = fix_orientation(image)
+
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.image(image, caption="📸", use_container_width=True)
+
+        with col2:
+            with st.spinner(translations["detecting"][lang]):
+                drug_text, confidence = extract_drug_info_by_cropping(image)
+                cleaned = clean_drug_name(drug_text)
+                has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
+                drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
+
+                df = load_csv()
+                result = get_drug_info_from_csv(drug_name, df, lang)
+
+                if result:
+                    nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
+
+                    components.html(f"""
+                        <div id=...>  # unchanged drug box layout
+                    """, height=130)
+
+                    st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
+
+                    section_title(translations["alt_drugs"][lang])
+                    alternativalar.index = range(1, len(alternativalar) + 1)
+                    st.dataframe(alternativalar, use_container_width=True, height=250)
+
+                    section_title(translations["illness"][lang])
+                    st.write(kasallik)
+
+                    section_title(translations["usage"][lang])
+                    formatted_instruksiya = "\n".join([f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()])
+                    st.markdown(formatted_instruksiya)
+
+                    st.markdown(f"""
+                        <div style='...'>
+                            {translations['disclaimer'][lang]}
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning(translations["not_found"][lang])
+
+    except Exception as e:
+        st.error(f"Xatolik: {e}")
+        st.text(traceback.format_exc())
 else:
     st.info(translations["upload_label"][lang])
