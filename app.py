@@ -191,20 +191,38 @@ if st.session_state.uploaded_image:
                     nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
 
                     components.html(f"""
-                        <div style="
-                           padding: 20px;
-                           background-color: #f0f9ff;
-                           border-left: 8px solid #0ea5e9;
-                           border-radius: 10px;
-                           font-family: 'Segoe UI', sans-serif;
-                           margin-top: 20px;
-                           box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
-                        ">
-                           <h3 style="margin: 0; font-size: 22px;">💊 {nomi}</h3>
-                           <p style="margin: 8px 0 4px 0;"><strong>{translations["price_label"][lang]}:</strong> {narx}</p>
-                           <p style="margin: 0;"><strong>🧬 {translations["drug_name"][lang]}:</strong> {tasir_modda}</p>
-                        </div>
-                       """, height=130)
+                        <div style='
+                          display: flex;
+                          flex-direction: column;
+                          background-color: #14532d;  /* ✅ Yashil fon */
+                          color: white;               /* ✅ Oq matn */
+                          border-radius: 12px;
+                          padding: 16px 24px;
+                          margin-top: 20px;
+                          font-family: "Segoe UI", sans-serif;
+                          box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+                       '>
+                           <div style='
+                              display: flex;
+                              justify-content: space-between;
+                              flex-wrap: wrap;
+                              align-items: center;
+                           '>
+                              <div style='font-size: 20px; font-weight: 600; flex: 1 1 200px;'>
+                                   💊 {nomi}
+                              </div>
+                              <div style='
+                                  font-size: 18px;
+                                  text-align: right;
+                                  flex: 1 1 100px;
+                                  margin-top: 6px;
+                              '>
+                                 💵 {translations["price_label"][lang]}: {narx}
+                               </div>
+                             </div>
+                           </div>
+                           """, height=130)
+                          
 
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
