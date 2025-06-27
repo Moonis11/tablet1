@@ -219,10 +219,19 @@ if uploaded_file:
                 if result:
                     nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
 
-                    st.markdown(
-                        f"<div style='background-color:#013220;color:white;padding:12px 20px;border-radius:10px;font-size:20px;font-weight:700;'>"
-                        f"{translations['drug_name'][lang]}: {nomi.upper()} &nbsp;&nbsp; {translations['price_label'][lang]}: {narx}"
-                        f"</div>", unsafe_allow_html=True)
+                    st.markdown(f"""<style> @media (max-width: 768px) {{.drug-info-box {{
+                     flex-direction: column !important;  align-items: flex-start !important;
+                     text-align: left !important;}} .drug-price {{margin-top: 8px !important;}}
+                     }}     </style> 
+                     <div class='drug-info-box' style=' display: flex;justify-content: space-between;
+                     align-items: center; background-color: #013220; padding: 15px 18px;
+                     border-radius: 12px; color: white; font-size: 20px; font-weight: 700;
+                     font-family: "Segoe UI", Tahoma, sans-serif; flex-wrap: wrap;
+                     gap: 10px; margin-bottom: 10px;'>
+                    <div style='word-break: break-word;'>💊 {translations['drug_name'][lang]}: {nomi.upper()}</div>
+                    <div class='drug-price' style='color: #ffffff; font-weight:600;'>💵 {translations['price_label'][lang]}: {narx}</div>
+                    </div> """,  unsafe_allow_html=True)
+
 
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
