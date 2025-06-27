@@ -131,15 +131,6 @@ def section_title(title_text):
         unsafe_allow_html=True
     )
    
-uploaded_file = st.file_uploader("Rasm yuklang", type=["jpg", "jpeg", "png"])
-
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    image = resize_image(image)
-    image = fix_orientation(image)
-    st.session_state.uploaded_image = image
-
-
 if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
 
