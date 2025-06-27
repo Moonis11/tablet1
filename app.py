@@ -170,7 +170,7 @@ if uploaded_file:
                 if result:
                     nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                    # 💊 Dori nomi va 💵 narxi
+                    # 💊 Dori nomi + 💵 Narxi (qoramtir yashil fon)
                     components.html(f"""
                         <div style="
                            display: flex;
@@ -184,7 +184,7 @@ if uploaded_file:
                            font-family: 'Segoe UI', sans-serif;
                            font-weight: 600;
                            margin-top: 20px;
-                           margin-bottom: 5px;
+                           margin-bottom: 4px;
                         ">
                             <div style="font-size: 20px; flex: 1 1 200px;">
                                  {translations["drug_name"][lang]}: {nomi}
@@ -208,14 +208,44 @@ if uploaded_file:
                         </style>
                     """, height=130)
 
-                    # 💬 OCR aniqlik darajasi — darhol ostiga chiqariladi
-                    st.markdown(
-                        f"<div style='color:#999;font-size:13px; margin-top:-10px;'>OCR aniqlik: {confidence}%</div>",
-                        unsafe_allow_html=True
-                    )
+                    # 🔍 OCR aniqlik (dori nomining tagiga chiqadi)
+                    st.markdown(f"<div style='color:#999;font-size:13px;margin-top:-10px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
 
-                    # ✅ Qolgan qismlar bu yerga yoziladi (alternativalar, kasallik, instruktsiya va h.k.)
+                    # 🔄 Alternativ dorilar
+                    section_title(translations["alt_drugs"][lang])
+                    alternativalar.index = range(1, len(alternativalar) + 1)
+                    st.dataframe(alternativalar, use_container_width=True, height=250)
 
+                    # 📋 Kasalliklar
+                    section_title(translations["illness"][lang])
+                    st.write(kasallik)
+
+                    # 🧾 Instruksiya (har bir qator `.` bilan ajralgan)
+                    section_title(translations["usage"][lang])
+                    formatted_instruksiya = "\n".join([
+                        f"• {line.strip()}"
+                        for line in instruktsiya.split("\n") if line.strip()
+                    ])
+                    st.markdown(formatted_instruksiya)
+
+                    # 📌 Diskleymer
+                    st.markdown(f"""
+                        <div style='
+                            width: 100%;
+                            margin: 40px auto 20px auto;
+                            padding: 18px 24px;
+                            background-color: #123024;
+                            color: #ffffff;
+                            font-size: 17px;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            font-family: "Segoe UI", Tahoma, sans-serif;
+                            text-align: center;
+                            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+                        '>
+                            {translations['disclaimer'][lang]}
+                        </div>
+                    """, unsafe_allow_html=True)
                 else:
                     st.warning(translations["not_found"][lang])
 
