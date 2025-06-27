@@ -311,6 +311,3 @@ if uploaded_file:
 else:
     st.info(translations["upload_label"][lang])
 
-
-        else:
-            st.warning(translations["not_found"][lang])
