@@ -149,92 +149,87 @@ st.title(translations["title"][lang])
 uploaded_file = st.file_uploader(translations["upload_label"][lang], type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
-    image = Image.open(uploaded_file)
-    image = resize_image(image)
-    image = fix_orientation(image)
+    try:
+        image = Image.open(uploaded_file)
+        image = resize_image(image)
+        image = fix_orientation(image)
 
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.image(image, caption="📸", use_container_width=True)
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.image(image, caption="📸", use_container_width=True)
 
-    with col2:
-        with st.spinner(translations["detecting"][lang]):
-            drug_text, confidence = extract_drug_info_by_cropping(image)
-            cleaned = clean_drug_name(drug_text)
-            has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
-            drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
+        with col2:
+            with st.spinner(translations["detecting"][lang]):
+                drug_text, confidence = extract_drug_info_by_cropping(image)
+                cleaned = clean_drug_name(drug_text)
+                has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
+                drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
 
-            df = load_csv()
-            result = get_drug_info_from_csv(drug_name, df, lang)
+                df = load_csv()
+                result = get_drug_info_from_csv(drug_name, df, lang)
 
-            if result:
-                nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
+                if result:
+                    nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                components.html(f"""
-                    <style>
-                    @media (max-width: 768px) {{
-                        .drug-info-container {{
-                            flex-direction: column;
-                            align-items: flex-start;
-                        }}
-                        .drug-price {{
-                            margin-top: 10px;
-                            text-align: left;
-                        }}
-                    }}
-                    </style>
-                    <div style="
-                        background-color: #013220;
-                        color: white;
-                        padding: 18px 22px;
-                        border-radius: 12px;
-                        font-family: 'Segoe UI', sans-serif;
-                        margin-top: 20px;
-                        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                    ">
-                        <div class="drug-info-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                            <div class="drug-name" style="font-size: 20px; font-weight: 600;">
+                    # ✅ Dori nomi va narxi kartochkasi (faol moddasiz)
+                    components.html(f"""
+                        <div style='
+                            display: flex;
+                            flex-wrap: wrap;
+                            justify-content: space-between;
+                            align-items: center;
+                            background-color: #14532d;
+                            color: white;
+                            padding: 16px 24px;
+                            border-radius: 12px;
+                            font-family: "Segoe UI", sans-serif;
+                            font-weight: 600;
+                            margin-top: 20px;
+                            margin-bottom: 20px;
+                            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+                        '>
+                            <div style='font-size: 20px; flex: 1 1 200px;'>
                                 💊 {nomi}
                             </div>
-                            <div class="drug-price" style="font-size: 18px;">
-                                💴 {translations["price_label"][lang]}: {narx}
+                            <div style='font-size: 18px; text-align: right; flex: 1 1 100px;'>
+                                💵 {translations["price_label"][lang]}: {narx if narx else "Nomaʼlum"}
                             </div>
                         </div>
-                        <div style="margin-top: 6px; font-size: 16px;">
-                            🔬 <b>{translations["drug_name"][lang]}:</b> {tasir_modda}
+                    """, height=100)
+
+                    st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
+
+                    section_title(translations["alt_drugs"][lang])
+                    alternativalar.index = range(1, len(alternativalar) + 1)
+                    st.dataframe(alternativalar, use_container_width=True, height=250)
+
+                    section_title(translations["illness"][lang])
+                    st.write(kasallik)
+
+                    section_title(translations["usage"][lang])
+                    formatted_instruksiya = "\n".join([f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()])
+                    st.markdown(formatted_instruksiya)
+
+                    st.markdown(f"""
+                        <div style='
+                            width: 100%;
+                            margin: 40px auto 20px auto;
+                            padding: 18px 24px;
+                            background-color: #14532d;
+                            color: #ffffff;
+                            font-size: 17px;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            font-family: "Segoe UI", Tahoma, sans-serif;
+                            text-align: center;
+                            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+                        '>
+                            {translations['disclaimer'][lang]}
                         </div>
-                    </div>
-                """, height=140)
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning(translations["not_found"][lang])
 
-                st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
-
-                section_title(translations["alt_drugs"][lang])
-                alternativalar.index = range(1, len(alternativalar) + 1)
-                st.dataframe(alternativalar, use_container_width=True, height=250)
-
-                section_title(translations["illness"][lang])
-                st.write(kasallik)
-
-                section_title(translations["usage"][lang])
-                formatted_instruksiya = "\n".join([f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()])
-                st.markdown(formatted_instruksiya)
-
-                st.markdown(f"""
-                  <div style='
-                       width: 100%;
-                       margin: 40px auto 20px auto;
-                       padding: 18px 24px;
-                       background-color: #14532d;
-                       color: #ffffff;
-                       font-size: 17px;
-                       font-weight: 600;
-                       border-radius: 12px;
-                       font-family: "Segoe UI", Tahoma, sans-serif;
-                       text-align: center;
-                       box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-                    '>
-                      {translations['disclaimer'][lang]}
-                   </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.warning(translations["not_found"][lang])
+    except Exception as e:
+        st.error(f"Xatolik: {e}")
+        st.text(traceback.format_exc())
