@@ -237,10 +237,10 @@ if uploaded_file:
                             flex-wrap: wrap;
                         ">
                             <div id="drug-name" style="flex:1; word-break: break-word;">
-                                💊 {translations['drug_name'][lang]}: {nomi.upper()}
+                                {translations['drug_name'][lang]}: {nomi.upper()}
                             </div>
                             <div id="drug-price" style="text-align: right; min-width: 150px;">
-                                💵 {translations['price_label'][lang]}: {narx}
+                                 {translations['price_label'][lang]}: {narx}
                             </div>
                         </div>
                         <script>
