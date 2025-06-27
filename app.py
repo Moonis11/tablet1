@@ -219,8 +219,8 @@ if uploaded_file:
                     st.write(kasallik)
 
                     section_title(translations["usage"][lang])
-                    formatted_instruksiya = "\n".join([re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in instruktsiya.split("\n") if line.strip()])
-                    st.markdown(formatted_instruksiya)
+                    formatted_instruksiya = "<br>".join([re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in instruktsiya.split("\n") if line.strip()])
+                    st.markdown(formatted_instruksiya, unsafe_allow_html=True)
 
                     # Diskleymer
                     st.markdown(f"""
