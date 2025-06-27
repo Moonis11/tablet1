@@ -44,28 +44,7 @@ def load_drug_names():
 
 drug_names = load_drug_names()
 
-# Dori nomini saqlash funksiyasi
-def save_unrecognized_name(detected_text):
-    os.makedirs("unrecognized-names", exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
-    safe_text = safe_text[:50]
-    file_path = f"unrecognized-names/{safe_text}_{timestamp}.txt"
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(detected_text)
-
-if uploaded_file:
-    # 👇 Siz shu yerda OCR orqali nomni ajratasiz
-    # detected_text = run_ocr_somehow(uploaded_file)  ← sizning OCR funksiya
-    detected_text = "example_drug_from_ocr"  # <-- O'zingizda OCR natijasi shu yerga kelsin
-    detected_text = detected_text.strip().lower()
-
-    # CSV dan tekshirish
-    if any(drug in detected_text for drug in drug_names):
-        st.success(f"✅ Dori topildi: {detected_text}")
-    else:
-        save_unrecognized_name(detected_text)
 
 
 
