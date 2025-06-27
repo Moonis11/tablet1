@@ -41,13 +41,20 @@ def load_csv():
     df.columns = df.columns.str.strip()
     return df
 
+import re
+
 def save_unrecognized_image(image, detected_text):
     os.makedirs("unrecognized", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_text = detected_text.replace(" ", "_")[:30]
+    
+    # Faqat ruxsat etilgan belgilarni qoldirish (harf, raqam, _, -)
+    safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
+    safe_text = safe_text[:30]
+    
     filename = f"unrecognized/{safe_text}_{timestamp}.png"
     image.save(filename)
     print(f"Yangi noma'lum rasm saqlandi: {filename}")
+
 
 
 def fuzzy_match_drug_name(drug_name, df):
