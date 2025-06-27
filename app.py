@@ -170,68 +170,72 @@ if uploaded_file:
                 if result:
                     nomi, kasallik, instruktsiya, alternativalar, narx = result
 
+                    # 💊 Dori nomi va 💵 narxi — fon rangi qoramtir yashil (#123024)
                     components.html(f"""
                         <div style="
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            background-color: #123024;
-                            color: white;
-                            padding: 12px 18px;
-                            border-radius: 10px;
-                            font-family: 'Segoe UI', sans-serif;
-                            font-weight: 600;
-                            margin-top: 10px;
-                            margin-bottom: 10px;
+                           display: flex;
+                           flex-wrap: wrap;
+                           justify-content: space-between;
+                           align-items: center;
+                           background-color: #123024;
+                           color: white;
+                           padding: 16px 24px;
+                           border-radius: 12px;
+                           font-family: 'Segoe UI', sans-serif;
+                           font-weight: 600;
+                           margin-top: 20px;
+                           margin-bottom: 20px;
                         ">
-                            <div style="font-size: 18px;">
+                            <div style="font-size: 20px; flex: 1 1 200px;">
                                  {translations["drug_name"][lang]}: {nomi}
                             </div>
-                            <div style="font-size: 18px; text-align: right;">
+                            <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
+                                 {translations["price_label"][lang]}: {narx}
+                            </div>
+                            <div style="width: 100%; font-size: 16px; margin-top: 10px; display: none;" class="mobile-price">
                                  {translations["price_label"][lang]}: {narx}
                             </div>
                         </div>
                         <style>
                             @media only screen and (max-width: 768px) {{
-                                div[style*="display: flex;"] {{
-                                    flex-direction: column;
-                                    align-items: flex-start;
+                                .mobile-price {{
+                                    display: block !important;
                                 }}
-                                div[style*="display: flex;"] > div {{
-                                    margin-bottom: 4px;
+                                div[style*="display: flex;"] > div:nth-child(2) {{
+                                    display: none !important;
                                 }}
                             }}
                         </style>
-                    """, height=90)
+                    """, height=130)
 
-                    st.markdown(f"<div style='color:#999;font-size:13px;margin-top:-8px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
+                    # OCR aniqlik
+                    st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
                     section_title(translations["alt_drugs"][lang])
                     alternativalar.index = range(1, len(alternativalar) + 1)
                     st.dataframe(alternativalar, use_container_width=True, height=250)
 
                     section_title(translations["illness"][lang])
-                    st.markdown(f"<div style='font-size: 15px;'>{kasallik}</div>", unsafe_allow_html=True)
+                    st.write(kasallik)
 
                     section_title(translations["usage"][lang])
-                    formatted_instruksiya = "\n".join([
-                        f"{i+1}. {line.strip()}"
-                        for i, line in enumerate(instruktsiya.split("\n")) if line.strip()
-                    ])
-                    st.markdown(f"<div style='font-size: 15px; line-height: 1.6;'>{formatted_instruksiya}</div>", unsafe_allow_html=True)
+                    formatted_instruksiya = "\n".join([f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()])
+                    st.markdown(formatted_instruksiya)
 
+                    # Diskleymer
                     st.markdown(f"""
                         <div style='
                             width: 100%;
-                            margin: 30px auto 10px auto;
-                            padding: 16px 20px;
+                            margin: 40px auto 20px auto;
+                            padding: 18px 24px;
                             background-color: #123024;
                             color: #ffffff;
-                            font-size: 15px;
+                            font-size: 17px;
                             font-weight: 600;
-                            border-radius: 10px;
+                            border-radius: 12px;
                             font-family: "Segoe UI", Tahoma, sans-serif;
                             text-align: center;
+                            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
                         '>
                             {translations['disclaimer'][lang]}
                         </div>
@@ -241,4 +245,3 @@ if uploaded_file:
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
-
