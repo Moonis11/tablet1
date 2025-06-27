@@ -207,24 +207,22 @@ if uploaded_file:
         with col1:
             st.image(image, caption="📸", use_container_width=True)
 
-    
+          with col2:
+               with st.spinner(translations["detecting"][lang]):
+                drug_text, confidence = extract_drug_info_by_cropping(image)
+                cleaned = clean_drug_name(drug_text)
+                has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
+                drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
 
-with col2:
-    with st.spinner(translations["detecting"][lang]):
-        drug_text, confidence = extract_drug_info_by_cropping(image)
-        cleaned = clean_drug_name(drug_text)
-        has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
-        drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
+                df = load_csv()
+               result = get_drug_info_from_csv(drug_name, df, lang)
 
-        df = load_csv()
-        result = get_drug_info_from_csv(drug_name, df, lang)
+               if result:
+                  nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
 
-        if result:
-            nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
-
-            # 💊 Dori nomi va 💵 narx (responsive)
-            components.html(f"""
-                <div id="drug-box" style="
+                 # 💊 Dori nomi va 💵 narx (responsive)
+                 components.html(f"""
+                 <div id="drug-box" style="
                     background-color: #013220;
                     color: white;
                     padding: 16px;
@@ -237,15 +235,15 @@ with col2:
                     justify-content: space-between;
                     align-items: center;
                     flex-wrap: wrap;
-                ">
+                  ">
                     <div id="drug-name" style="flex:1; word-break: break-word;">
                         💊 {translations['drug_name'][lang]}: {nomi.upper()}
                     </div>
                     <div id="drug-price" style="text-align: right; min-width: 150px;">
                         💵 {translations['price_label'][lang]}: {narx}
                     </div>
-                </div>
-                <script>
+                 </div>
+                 <script>
                     const updateLayout = () => {{
                         const width = window.innerWidth;
                         const drugBox = document.getElementById("drug-box");
@@ -259,8 +257,8 @@ with col2:
                     }};
                     updateLayout();
                     window.addEventListener('resize', updateLayout);
-                </script>
-            """, height=130)
+                 </script>
+              """, height=130)
 
             # 📈 OCR aniqligi
             st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
