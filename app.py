@@ -6,6 +6,8 @@ import re
 from difflib import get_close_matches
 import traceback
 import streamlit.components.v1 as components
+import os
+from datetime import datetime
 
 MAX_SIZE = (1024, 1024)
 
@@ -41,25 +43,45 @@ def load_csv():
     df.columns = df.columns.str.strip()
     return df
 
-import re
+# 📁 Faylni saqlash funksiyasi
+def save_unrecognized_image(image, detected_text):
+    os.makedirs("unrecognized", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-from PIL import Image
-import pytesseract
-import pandas as pd
+    # Fayl nomini xavfsiz holga keltirish
+    safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
+    safe_text = safe_text[:30]
+    filename = f"unrecognized/{safe_text}_{timestamp}.png"
 
-# CSV yuklash
-df = pd.read_csv("alternativa1.csv")
-drug_names = df["Asl dorining nomi"].str.lower().str.strip().tolist()
+    image.save(filename)
+    st.warning(f"❌ Dori topilmadi. Rasm saqlandi: `{filename}`")
 
-# Yuklangan rasmni o'qish
-image = Image.open("upload_image.jpg")
-detected_text = pytesseract.image_to_string(image).strip().lower()
+# 📄 CSV yuklash
+@st.cache_data
+def load_drug_names():
+    df = pd.read_csv("alternativa1.csv")
+    return df["Asl dorining nomi"].str.lower().str.strip().tolist()
 
-# CSV'dan tekshirish
-if any(drug in detected_text for drug in drug_names):
-    print("✅ Dori topildi:", detected_text)
-else:
-    save_unrecognized_image(image, detected_text)  # bu siz yozgan funksiya
+drug_names = load_drug_names()
+
+# 🎨 Ilova interfeysi
+st.title("🧪 Dori aniqlovchi AI")
+st.write("Dori nomi CSV'da bo'lmasa, rasm `unrecognized/` papkaga saqlanadi.")
+
+# 📤 Rasm yuklash
+uploaded_file = st.file_uploader("Rasm yuklang", type=["jpg", "png", "jpeg"])
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Yuklangan rasm", use_column_width=True)
+
+    # 🧠 OCR dan chiqqan matnni kiriting
+    detected_text = st.text_input("Aniqlangan dori nomi (OCR'dan):").strip().lower()
+
+    if st.button("Tekshirish"):
+        if any(drug in detected_text for drug in drug_names):
+            st.success(f"✅ Dori topildi: **{detected_text}**")
+        else:
+            save_unrecognized_image(image, detected_text)
 
 
 
