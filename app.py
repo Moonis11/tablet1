@@ -237,12 +237,10 @@ if uploaded_file:
                     st.markdown(formatted_instruksiya)
 
                     st.markdown(
-                             f"""
-                           <div style='background-color: #14532d; color: white; padding: 14px 20px;
-                           font-size: 16px; font-weight: 600; border-radius: 10px;
-                            margin-top: 30px; margin-bottom: 10px; font-family: "Segoe UI", Tahoma, sans-serif;'>
-                            {translations['disclaimer'][lang]}
-                            </div> """,   unsafe_allow_html=True)
+                        f"""<div style='width: 100%; max-width: 900px; margin: 40px auto 20px auto; padding: 18px 24px; background-color: #14532d;
+                       color: #ffffff; font-size: 17px;   font-weight: 600; border-radius: 12px;  font-family: "Segoe UI", Tahoma, sans-serif;  text-align: center;
+                       box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);'>
+                       🩺 {translations['disclaimer'][lang]} </div> """, unsafe_allow_html=True)
 
                 else:
                     st.warning(translations["not_found"][lang])
