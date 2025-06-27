@@ -33,7 +33,6 @@ def fix_orientation(img):
         pass
     return img
 
-
 # CSV yuklash
 
 @st.cache_data
@@ -131,6 +130,14 @@ def section_title(title_text):
         f"<div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: Segoe UI;'>{title_text}</div>",
         unsafe_allow_html=True
     )
+   
+
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    image = resize_image(image)
+    image = fix_orientation(image)
+    st.session_state.uploaded_image = image
+
 
 if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
@@ -143,7 +150,7 @@ translations = {
     "title": {"uz": "🧪 TabletAI", "ru": "🧪 ТаблетAI", "en": "🧪 TabletAI"},
     "upload_label": {"uz": "Rasm yuklang", "ru": "Загрузите изображение", "en": "Upload an image"},
     "detecting": {"uz": "🔍 Dori nomi aniqligi...", "ru": "🔍 Точность названия препарата...", "en": "🔍 Drug name accuracy..."},
-    "not_found": {"uz": "💬 Oops! Izlangan dori vositasi bazamizda hozircha yo‘q. Lekin tizim muntazam yangilanmoqda. Keyinroq yana urinib ko‘ring.", "ru": "💬 Упс! Искомое лекарство пока отсутствует в нашей базе данных. Но система регулярно обновляется. Попробуйте позже.",
+    "not_found": {"uz": "💬 Oops! Izlangan dori vositasi bazamizda hozircha yo‘q. Lekin tizim muntazam yangilanmoqda. Keyinroq yana urinib ko‘ring.\n", "ru": "💬 Упс! Искомое лекарство пока отсутствует в нашей базе данных. Но система регулярно обновляется. Попробуйте позже.\n",
                   "en": "💬 Oops! The medicine you're looking for is not yet in our database. But the system is constantly being updated. Please try again later."},
     "alt_drugs": {"uz": "🔄 Alternativ dorilar", "ru": "🔄 Альтернативные лекарства", "en": "🔄 Alternative Drugs"},
     "illness": {"uz": "📋 Davolash uchun mo‘ljallangan holatlar", "ru": "📋 Состояния, для которых предназначено лечение", "en": "📋 Conditions targeted for treatment"},
