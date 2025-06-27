@@ -129,9 +129,9 @@ languages = {
 
 translations = {
     "title": {
-        "uz": "🧪 Tablet: Dori rasmi orqali aniqlash",
-        "ru": "🧪 Таблет: Распознавание лекарства по фото",
-        "en": "🧪 Tablet: Drug Recognition by Image"
+        "uz": "🧪 TabletAI",
+        "ru": "🧪 ТаблетAI",
+        "en": "🧪 TabletAI"
     },
     "upload_label": {
         "uz": "Rasm yuklang",
