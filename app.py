@@ -236,7 +236,7 @@ if uploaded_file:
 
                     # 🧾 Instruksiya (har bir qator `.` bilan ajralgan)
                     section_title(translations["usage"][lang])
-                    formatted_instruksiya = "<br>".join([re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in instruktsiya.split("\n") if line.strip()])
+                    formatted_instruksiya = "<br>".join([re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in str(instruktsiya).split("\n") if line.strip()])
                     st.markdown(formatted_instruksiya, unsafe_allow_html=True)
 
                     # 📌 Diskleymer
