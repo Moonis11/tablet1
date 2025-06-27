@@ -55,9 +55,6 @@ def save_unrecognized_name(detected_text):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(detected_text)
 
-# Foydalanuvchi rasm yuklaydi
-uploaded_file = st.file_uploader("", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
-
 if uploaded_file:
     # 👇 Siz shu yerda OCR orqali nomni ajratasiz
     # detected_text = run_ocr_somehow(uploaded_file)  ← sizning OCR funksiya
