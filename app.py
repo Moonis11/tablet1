@@ -207,8 +207,10 @@ if uploaded_file:
         with col1:
             st.image(image, caption="📸", use_container_width=True)
 
-        with col2:
-          with st.spinner(translations["detecting"][lang]):
+    
+
+with col2:
+    with st.spinner(translations["detecting"][lang]):
         drug_text, confidence = extract_drug_info_by_cropping(image)
         cleaned = clean_drug_name(drug_text)
         has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
