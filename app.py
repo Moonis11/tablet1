@@ -48,7 +48,6 @@ def save_unrecognized_image(image, detected_text):
     os.makedirs("unrecognized", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Fayl nomini xavfsiz holga keltirish
     safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
     safe_text = safe_text[:30]
     filename = f"unrecognized/{safe_text}_{timestamp}.png"
@@ -64,17 +63,18 @@ def load_drug_names():
 
 drug_names = load_drug_names()
 
-# 🎨 Ilova interfeysi
-st.title("🧪 Dori aniqlovchi AI")
-st.write("Dori nomi CSV'da bo'lmasa, rasm `unrecognized/` papkaga saqlanadi.")
-
-# 📤 Rasm yuklash
+# 📤 Faqat rasm yuklash interfeysi
 uploaded_file = st.file_uploader("Rasm yuklang", type=["jpg", "png", "jpeg"])
+
+# ✅ Rasm yuklangandan so‘ng matnlar chiqadi
 if uploaded_file:
+    st.title("🧪 Dori aniqlovchi AI")
+    st.write("Dori nomi CSV'da bo'lmasa, rasm `unrecognized/` papkaga saqlanadi.")
+
     image = Image.open(uploaded_file)
     st.image(image, caption="Yuklangan rasm", use_column_width=True)
 
-    # 🧠 OCR dan chiqqan matnni kiriting
+    # OCR'dan chiqqan matn kiritish
     detected_text = st.text_input("Aniqlangan dori nomi (OCR'dan):").strip().lower()
 
     if st.button("Tekshirish"):
