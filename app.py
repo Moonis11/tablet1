@@ -170,7 +170,7 @@ if uploaded_file:
                 if result:
                     nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                    # 💊 Dori nomi va 💵 narxi — fon rangi qoramtir yashil (#123024)
+                    # 💊 Dori nomi va 💵 narxi
                     components.html(f"""
                         <div style="
                            display: flex;
@@ -184,7 +184,7 @@ if uploaded_file:
                            font-family: 'Segoe UI', sans-serif;
                            font-weight: 600;
                            margin-top: 20px;
-                           margin-bottom: 20px;
+                           margin-bottom: 5px;
                         ">
                             <div style="font-size: 20px; flex: 1 1 200px;">
                                  {translations["drug_name"][lang]}: {nomi}
@@ -208,13 +208,17 @@ if uploaded_file:
                         </style>
                     """, height=130)
 
-                    # OCR aniqlik
-                    st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
+                    # 💬 OCR aniqlik darajasi — darhol ostiga chiqariladi
+                    st.markdown(
+                        f"<div style='color:#999;font-size:13px; margin-top:-10px;'>OCR aniqlik: {confidence}%</div>",
+                        unsafe_allow_html=True
+                    )
 
-                    # Qolgan qismlar (alternativalar, kasallik, instruktsiya) shu yerga yoziladi...
+                    # ✅ Qolgan qismlar bu yerga yoziladi (alternativalar, kasallik, instruktsiya va h.k.)
 
                 else:
                     st.warning(translations["not_found"][lang])
+
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
