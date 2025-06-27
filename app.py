@@ -272,9 +272,9 @@ if uploaded_file:
                              font-weight: 500;
                              font-family: "Segoe UI", sans-serif;
                              margin-top: 40px;
-                        '>
+                         '>
                             {translations["not_found"][lang]}
-                         </div>
+                          </div>
                          """, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Xatolik: {e}")
