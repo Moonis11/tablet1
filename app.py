@@ -171,6 +171,7 @@ if uploaded_file:
                 if result:
                     nomi, kasallik, instruktsiya, alternativalar, _, narx = result
 
+                    # ✅ Faqat dori nomi va narx (faol modda yo‘q)
                     components.html(f"""
                         <div style="
                            display: flex;
@@ -187,7 +188,7 @@ if uploaded_file:
                            margin-bottom: 20px;
                         ">
                             <div style="font-size: 20px; flex: 1 1 200px;">
-                                💊 {nomi}
+                                💊 {translations["drug_name"][lang]}: {nomi}
                             </div>
                             <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
                                 💵 {translations["price_label"][lang]}: {narx}
@@ -208,6 +209,7 @@ if uploaded_file:
                         </style>
                     """, height=130)
 
+                    # OCR aniqlik
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
                     section_title(translations["alt_drugs"][lang])
