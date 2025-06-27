@@ -169,33 +169,44 @@ if uploaded_file:
                 result = get_drug_info_from_csv(drug_name, df, lang)
 
                 if result:
-                    nomi, kasallik, instruktsiya, alternativalar, narx = result
+                    nomi, kasallik, instruktsiya, alternativalar, _, narx = result
 
-                    # ✅ Dori nomi va narxi kartochkasi (faol moddasiz)
                     components.html(f"""
-                        <div style='
-                            display: flex;
-                            flex-wrap: wrap;
-                            justify-content: space-between;
-                            align-items: center;
-                            background-color: #14532d;
-                            color: white;
-                            padding: 16px 24px;
-                            border-radius: 12px;
-                            font-family: "Segoe UI", sans-serif;
-                            font-weight: 600;
-                            margin-top: 20px;
-                            margin-bottom: 20px;
-                            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
-                        '>
-                            <div style='font-size: 20px; flex: 1 1 200px;'>
+                        <div style="
+                           display: flex;
+                           flex-wrap: wrap;
+                           justify-content: space-between;
+                           align-items: center;
+                           background-color: #14532d;
+                           color: white;
+                           padding: 16px 24px;
+                           border-radius: 12px;
+                           font-family: 'Segoe UI', sans-serif;
+                           font-weight: 600;
+                           margin-top: 20px;
+                           margin-bottom: 20px;
+                        ">
+                            <div style="font-size: 20px; flex: 1 1 200px;">
                                 💊 {nomi}
                             </div>
-                            <div style='font-size: 18px; text-align: right; flex: 1 1 100px;'>
-                                💵 {translations["price_label"][lang]}: {narx if narx else "Nomaʼlum"}
+                            <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
+                                💵 {translations["price_label"][lang]}: {narx}
+                            </div>
+                            <div style="width: 100%; font-size: 16px; margin-top: 10px; display: none;" class="mobile-price">
+                                💵 {translations["price_label"][lang]}: {narx}
                             </div>
                         </div>
-                    """, height=100)
+                        <style>
+                            @media only screen and (max-width: 768px) {{
+                                .mobile-price {{
+                                    display: block !important;
+                                }}
+                                div[style*="display: flex;"] > div:nth-child(2) {{
+                                    display: none !important;
+                                }}
+                            }}
+                        </style>
+                    """, height=130)
 
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
@@ -229,7 +240,6 @@ if uploaded_file:
                     """, unsafe_allow_html=True)
                 else:
                     st.warning(translations["not_found"][lang])
-
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
