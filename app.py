@@ -207,57 +207,93 @@ if uploaded_file:
             st.image(image, caption="📸", use_container_width=True)
 
         with col2:
-            with st.spinner(translations["detecting"][lang]):
-                drug_text, confidence = extract_drug_info_by_cropping(image)
-                cleaned = clean_drug_name(drug_text)
-                has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
-                drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
+    with st.spinner(translations["detecting"][lang]):
+        drug_text, confidence = extract_drug_info_by_cropping(image)
+        cleaned = clean_drug_name(drug_text)
+        has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
+        drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
 
-                df = load_csv()
-                result = get_drug_info_from_csv(drug_name, df, lang)
+        df = load_csv()
+        result = get_drug_info_from_csv(drug_name, df, lang)
 
-                if result:
-                    nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
+        if result:
+            nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
 
-                    st.markdown(f"""<style> @media (max-width: 768px) {{.drug-info-box {{
-                     flex-direction: column !important;  align-items: flex-start !important;
-                     text-align: left !important;}} .drug-price {{margin-top: 8px !important;}}
-                     }}     </style> 
-                     <div class='drug-info-box' style=' display: flex;justify-content: space-between;
-                     align-items: center; background-color: #013220; padding: 15px 18px;
-                     border-radius: 12px; color: white; font-size: 20px; font-weight: 700;
-                     font-family: "Segoe UI", Tahoma, sans-serif; flex-wrap: wrap;
-                     gap: 10px; margin-bottom: 10px;'>
-                    <div style='word-break: break-word;'>💊 {translations['drug_name'][lang]}: {nomi.upper()}</div>
-                    <div class='drug-price' style='color: #ffffff; font-weight:600;'>💵 {translations['price_label'][lang]}: {narx}</div>
-                    </div> """,  unsafe_allow_html=True)
+            # ✅ Dori nomi + narx (responsive)
+            st.markdown(
+                f"""
+                <style>
+                @media (max-width: 768px) {{
+                    .drug-info-box {{
+                        flex-direction: column !important;
+                        align-items: flex-start !important;
+                    }}
+                }}
+                </style>
+                <div class="drug-info-box" style='
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    align-items: center;
+                    background-color: #013220;
+                    padding: 15px 18px;
+                    border-radius: 12px;
+                    color: white;
+                    font-size: 20px;
+                    font-weight: 700;
+                    font-family: "Segoe UI", Tahoma, sans-serif;
+                    margin-bottom: 10px;
+                '>
+                    <div style="flex: 1; min-width: 200px; word-break: break-word;">
+                        💊 {translations['drug_name'][lang]}: {nomi.upper()}
+                    </div>
+                    <div style="margin-left: auto; min-width: 150px; text-align: right;">
+                        💵 {translations['price_label'][lang]}: {narx}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
+            # ✅ OCR aniqligi
+            st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
-                    st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
+            # ✅ Alternativa dorilar
+            section_title(translations["alt_drugs"][lang])
+            alternativalar.index = range(1, len(alternativalar) + 1)
+            st.dataframe(alternativalar, use_container_width=True, height=250)
 
-                    section_title(translations["alt_drugs"][lang])
-                    alternativalar.index = range(1, len(alternativalar) + 1)
-                    st.dataframe(alternativalar, use_container_width=True, height=250)
+            # ✅ Kasalliklar
+            section_title(translations["illness"][lang])
+            st.write(kasallik)
 
-                    section_title(translations["illness"][lang])
-                    st.write(kasallik)
+            # ✅ Instruksiya
+            section_title(translations["usage"][lang])
+            formatted_instruksiya = "\n".join([
+                f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()
+            ])
+            st.markdown(formatted_instruksiya)
 
-                    section_title(translations["usage"][lang])
-                    formatted_instruksiya = "\n".join([
-                        f"- {line.strip()}" for line in instruktsiya.split("\n") if line.strip()
-                    ])
-                    st.markdown(formatted_instruksiya)
-
-                    st.markdown(
-                        f"""<div style='width: 100%; margin: 40px auto 20px auto; padding: 18px 24px; background-color: #14532d;
-                       color: #ffffff; font-size: 17px;   font-weight: 600; border-radius: 12px;  font-family: "Segoe UI", Tahoma, sans-serif;  text-align: center;
-                       box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);'>
-                       {translations['disclaimer'][lang]} </div> """, unsafe_allow_html=True)
-
-                else:
-                    st.warning(translations["not_found"][lang])
-    except Exception as e:
-        st.error(f"Xatolik: {e}")
-        st.text(traceback.format_exc())
-else:
-    st.info(translations["upload_label"][lang])
+            # ✅ Disclaymer
+            st.markdown(
+                f"""
+                <div style='
+                    width: 100%;
+                    margin: 40px auto 20px auto;
+                    padding: 18px 24px;
+                    background-color: #14532d;
+                    color: #ffffff;
+                    font-size: 17px;
+                    font-weight: 600;
+                    border-radius: 12px;
+                    font-family: "Segoe UI", Tahoma, sans-serif;
+                    text-align: center;
+                    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+                '>
+                    {translations['disclaimer'][lang]}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning(translations["not_found"][lang])
