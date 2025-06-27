@@ -41,6 +41,15 @@ def load_csv():
     df.columns = df.columns.str.strip()
     return df
 
+def save_unrecognized_image(image, detected_text):
+    os.makedirs("unrecognized", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_text = detected_text.replace(" ", "_")[:30]
+    filename = f"unrecognized/{safe_text}_{timestamp}.png"
+    image.save(filename)
+    print(f"Yangi noma'lum rasm saqlandi: {filename}")
+
+
 def fuzzy_match_drug_name(drug_name, df):
     all_drugs = df['Asl dorining nomi'].astype(str).str.lower().tolist()
     match = get_close_matches(drug_name.lower(), all_drugs, n=1, cutoff=0.7)
