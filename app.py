@@ -5,6 +5,7 @@ from oracle import extract_drug_info_by_cropping
 import re
 from difflib import get_close_matches
 import traceback
+import streamlit.components.v1 as components
 
 MAX_SIZE = (1024, 1024)
 
@@ -219,62 +220,66 @@ if uploaded_file:
         if result:
             nomi, kasallik, instruktsiya, alternativalar, tasir_modda, narx = result
 
-            # ✅ Dori nomi + narx (responsive)
-            st.markdown(
-                f"""
-                <style>
-                @media (max-width: 768px) {{
-                    .drug-info-box {{
-                        flex-direction: column !important;
-                        align-items: flex-start !important;
-                    }}
-                }}
-                </style>
-                <div class="drug-info-box" style='
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: space-between;
-                    align-items: center;
+            # 💊 Dori nomi va 💵 narx (responsive)
+            components.html(f"""
+                <div id="drug-box" style="
                     background-color: #013220;
-                    padding: 15px 18px;
-                    border-radius: 12px;
                     color: white;
+                    padding: 16px;
+                    border-radius: 12px;
                     font-size: 20px;
                     font-weight: 700;
-                    font-family: "Segoe UI", Tahoma, sans-serif;
-                    margin-bottom: 10px;
-                '>
-                    <div style="flex: 1; min-width: 200px; word-break: break-word;">
+                    font-family: 'Segoe UI', Tahoma, sans-serif;
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                ">
+                    <div id="drug-name" style="flex:1; word-break: break-word;">
                         💊 {translations['drug_name'][lang]}: {nomi.upper()}
                     </div>
-                    <div style="margin-left: auto; min-width: 150px; text-align: right;">
+                    <div id="drug-price" style="text-align: right; min-width: 150px;">
                         💵 {translations['price_label'][lang]}: {narx}
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                <script>
+                    const updateLayout = () => {{
+                        const width = window.innerWidth;
+                        const drugBox = document.getElementById("drug-box");
+                        const price = document.getElementById("drug-price");
+                        if (width <= 768) {{
+                            drugBox.style.flexDirection = "column";
+                            drugBox.style.alignItems = "flex-start";
+                            price.style.marginTop = "10px";
+                            price.style.textAlign = "left";
+                        }}
+                    }};
+                    updateLayout();
+                    window.addEventListener('resize', updateLayout);
+                </script>
+            """, height=130)
 
-            # ✅ OCR aniqligi
+            # 📈 OCR aniqligi
             st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
-            # ✅ Alternativa dorilar
+            # 🔄 Alternativ dorilar
             section_title(translations["alt_drugs"][lang])
             alternativalar.index = range(1, len(alternativalar) + 1)
             st.dataframe(alternativalar, use_container_width=True, height=250)
 
-            # ✅ Kasalliklar
+            # 📋 Qaysi kasalliklarda
             section_title(translations["illness"][lang])
             st.write(kasallik)
 
-            # ✅ Instruksiya
+            # 💊 Instruksiya
             section_title(translations["usage"][lang])
             formatted_instruksiya = "\n".join([
                 f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()
             ])
             st.markdown(formatted_instruksiya)
 
-            # ✅ Disclaymer
+            # ✅ Disclaimer
             st.markdown(
                 f"""
                 <div style='
@@ -295,5 +300,6 @@ if uploaded_file:
                 """,
                 unsafe_allow_html=True
             )
+
         else:
             st.warning(translations["not_found"][lang])
