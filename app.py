@@ -169,16 +169,16 @@ if uploaded_file:
                 result = get_drug_info_from_csv(drug_name, df, lang)
 
                 if result:
-                    nomi, kasallik, instruktsiya, alternativalar, _tasir_modda, narx = result  # 6 ta unpack ✅
+                    nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                    # ✅ Faqat dori nomi va narx (faol modda chiqarilmaydi)
+                    # 💊 Dori nomi va 💵 narxi — fon rangi qoramtir yashil (#123024)
                     components.html(f"""
                         <div style="
                            display: flex;
                            flex-wrap: wrap;
                            justify-content: space-between;
                            align-items: center;
-                           background-color: #14532d;
+                           background-color: #123024;
                            color: white;
                            padding: 16px 24px;
                            border-radius: 12px;
@@ -209,30 +209,27 @@ if uploaded_file:
                         </style>
                     """, height=130)
 
-                    # OCR aniqligi (pastida)
+                    # OCR aniqlik
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
-                    # 🔄 Alternativalar
                     section_title(translations["alt_drugs"][lang])
                     alternativalar.index = range(1, len(alternativalar) + 1)
                     st.dataframe(alternativalar, use_container_width=True, height=250)
 
-                    # 📋 Kasallik
                     section_title(translations["illness"][lang])
                     st.write(kasallik)
 
-                    # 🧾 Instruksiya
                     section_title(translations["usage"][lang])
                     formatted_instruksiya = "\n".join([f"➤ {line.strip()}" for line in instruktsiya.split("\n") if line.strip()])
                     st.markdown(formatted_instruksiya)
 
-                    # 📌 Diskleymer
+                    # Diskleymer
                     st.markdown(f"""
                         <div style='
                             width: 100%;
                             margin: 40px auto 20px auto;
                             padding: 18px 24px;
-                            background-color: #14532d;
+                            background-color: #123024;
                             color: #ffffff;
                             font-size: 17px;
                             font-weight: 600;
@@ -249,4 +246,3 @@ if uploaded_file:
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
-
