@@ -150,7 +150,7 @@ translations = {
     "title": {"uz": "🧪 TabletAI", "ru": "🧪 ТаблетAI", "en": "🧪 TabletAI"},
     "upload_label": {"uz": "Rasm yuklang", "ru": "Загрузите изображение", "en": "Upload an image"},
     "detecting": {"uz": "🔍 Dori nomi aniqligi...", "ru": "🔍 Точность названия препарата...", "en": "🔍 Drug name accuracy..."},
-    "not_found": {"uz": "💬 Oops! Izlangan dori vositasi bazamizda hozircha yo‘q. Lekin tizim muntazam yangilanmoqda. Keyinroq yana urinib ko‘ring.\n", "ru": "💬 Упс! Искомое лекарство пока отсутствует в нашей базе данных. Но система регулярно обновляется. Попробуйте позже.\n",
+    "not_found": {"uz": "💬 Oops! Izlangan dori vositasi bazamizda hozircha yo‘q. Lekin tizim muntazam yangilanmoqda. Keyinroq yana urinib ko‘ring.", "ru": "💬 Упс! Искомое лекарство пока отсутствует в нашей базе данных. Но система регулярно обновляется. Попробуйте позже.",
                   "en": "💬 Oops! The medicine you're looking for is not yet in our database. But the system is constantly being updated. Please try again later."},
     "alt_drugs": {"uz": "🔄 Alternativ dorilar", "ru": "🔄 Альтернативные лекарства", "en": "🔄 Alternative Drugs"},
     "illness": {"uz": "📋 Davolash uchun mo‘ljallangan holatlar", "ru": "📋 Состояния, для которых предназначено лечение", "en": "📋 Conditions targeted for treatment"},
