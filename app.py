@@ -227,6 +227,7 @@ if uploaded_file:
                     st.markdown(f"<div style='color:#999;font-size:13px;'>OCR aniqlik: {confidence}%</div>", unsafe_allow_html=True)
 
                     section_title(translations["alt_drugs"][lang])
+                    alternativalar.index = range(1, len(alternativalar) + 1)
                     st.dataframe(alternativalar, use_container_width=True, height=250)
 
                     section_title(translations["illness"][lang])
