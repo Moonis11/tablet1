@@ -61,23 +61,24 @@ def get_drug_info_from_csv(user_dori, df, lang):
     row = df[df['Asl dorining nomi lower'] == user_dori].iloc[0]
 
     if lang == "ru":
-        nomi = row.get("Asl dorining nomi", "")
-        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi rus", "")
-        instruktsiya = row.get("Instruksiya (foydalanish tartibi  rus", "")
-        form_col = "Dori shakli ruscha"
-        country_col = "Ishlab chiqargan mamlakat nomi rus"
-    elif lang == "en":
-        nomi = row.get("Asl dorining nomi", "")
-        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi eng", "")
-        instruktsiya = row.get("Instruksiya (foydalanish tartibi)  eng", "")
-        form_col = "Dori shakli eng"
-        country_col = "Ishlab chiqargan mamlakat nomi eng"
+      nomi = row.get("Asl dorining nomi", "")
+      kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi rus", "")
+      instruktsiya = row.get("Instruksiya (foydalanish tartibi  rus", "")
+      form_col = "Dori shakli ruscha"
+      country_col = "Ishlab chiqargan mamlakat nomi rus"
+   elif lang == "en":
+      nomi = row.get("Asl dorining nomi", "")
+      kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi eng", "")
+      instruktsiya = row.get("Instruksiya (foydalanish tartibi)  eng", "")
+      form_col = "Dori shakli eng"
+      country_col = "Ishlab chiqargan mamlakat nomi eng"
     else:
-        nomi = row.get("Asl dorining nomi", "")
-        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi", "")
-        instruktsiya = row.get("Instruksiya (foydalanish tartibi)", "")
-        form_col = "Dori shakli"
-        country_col = "Ishlab chiqargan mamlakat nomi"
+      nomi = row.get("Asl dorining nomi", "")
+      kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi", "")
+      instruktsiya = row.get("Instruksiya (foydalanish tartibi)", "")
+      form_col = "Dori shakli"
+      country_col = "Ishlab chiqargan mamlakat nomi"
+
 
     tasir_modda = row.get("Tasir etuvchi modda", "").strip().lower()
     narx = row.get("Narxi (taxminiy)", "")
