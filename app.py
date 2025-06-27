@@ -188,13 +188,13 @@ if uploaded_file:
                            margin-bottom: 20px;
                         ">
                             <div style="font-size: 20px; flex: 1 1 200px;">
-                                💊 {translations["drug_name"][lang]}: {nomi}
+                                 {translations["drug_name"][lang]}: {nomi}
                             </div>
                             <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
-                                💵 {translations["price_label"][lang]}: {narx}
+                                 {translations["price_label"][lang]}: {narx}
                             </div>
                             <div style="width: 100%; font-size: 16px; margin-top: 10px; display: none;" class="mobile-price">
-                                💵 {translations["price_label"][lang]}: {narx}
+                                 {translations["price_label"][lang]}: {narx}
                             </div>
                         </div>
                         <style>
