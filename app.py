@@ -197,9 +197,21 @@ if st.session_state.uploaded_image:
                     st.markdown(formatted_instruksiya)
 
                     st.markdown(f"""
-                        <div style='...'>
-                            {translations['disclaimer'][lang]}
-                        </div>
+                      <div style='
+                       width: 100%;
+                       margin: 40px auto 20px auto;
+                       padding: 18px 24px;
+                       background-color: #14532d;
+                       color: #ffffff;
+                       font-size: 17px;
+                       font-weight: 600;
+                       border-radius: 12px;
+                       font-family: "Segoe UI", Tahoma, sans-serif;
+                       text-align: center;
+                       box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+                     '>                      
+                        {translations['disclaimer'][lang]}
+                     </div>
                     """, unsafe_allow_html=True)
                 else:
                     st.warning(translations["not_found"][lang])
