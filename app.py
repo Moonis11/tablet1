@@ -33,31 +33,8 @@ def fix_orientation(img):
         pass
     return img
 
-@st.cache_data
-def load_csv():
-    import os
-    csv_path = "alternativa1.csv"
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"❌ Fayl topilmadi: {csv_path}")
-    df = pd.read_csv(csv_path, encoding="utf-8")
-    df.columns = df.columns.str.strip()
-    return df
 
-import streamlit as st
-import pandas as pd
-from PIL import Image
-import os
-from datetime import datetime
-import re
-
-def save_unrecognized_image(image, detected_text):
-    os.makedirs("unrecognized", exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
-    safe_text = safe_text[:30]
-    filename = f"unrecognized/{safe_text}_{timestamp}.png"
-    image.save(filename)
-
+# CSV yuklash
 @st.cache_data
 def load_drug_names():
     df = pd.read_csv("alternativa1.csv")
@@ -65,16 +42,31 @@ def load_drug_names():
 
 drug_names = load_drug_names()
 
-uploaded_file = st.file_uploader("", type=["jpg", "png", "jpeg"])
+# Dori nomini saqlash funksiyasi
+def save_unrecognized_name(detected_text):
+    os.makedirs("unrecognized-names", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_text = re.sub(r'[^a-zA-Z0-9_\-]', '_', detected_text.strip()) or "unknown"
+    safe_text = safe_text[:50]
+    file_path = f"unrecognized-names/{safe_text}_{timestamp}.txt"
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(detected_text)
+
+# Foydalanuvchi rasm yuklaydi
+uploaded_file = st.file_uploader("", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
 
 if uploaded_file:
-    image = Image.open(uploaded_file)
+    # 👇 Siz shu yerda OCR orqali nomni ajratasiz
+    # detected_text = run_ocr_somehow(uploaded_file)  ← sizning OCR funksiya
+    detected_text = "example_drug_from_ocr"  # <-- O'zingizda OCR natijasi shu yerga kelsin
+    detected_text = detected_text.strip().lower()
 
-    # Bu yerda siz OCR'dan chiqqan matnni o'zgaruvchi sifatida yozasiz:
-    detected_text = "paratsetamol"  # 👈 bu sizda real OCR'dan olinadi
-
-    if not any(drug in detected_text for drug in drug_names):
-        save_unrecognized_image(image, detected_text)
+    # CSV dan tekshirish
+    if any(drug in detected_text for drug in drug_names):
+        st.success(f"✅ Dori topildi: {detected_text}")
+    else:
+        save_unrecognized_name(detected_text)
 
 
 
