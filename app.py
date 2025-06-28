@@ -126,27 +126,24 @@ def transliterate_ru_to_lat(text):
     }
     return ''.join(ru_to_lat.get(c, c) for c in text)
 
-# Kirill harfi bormi?
-def is_cyrillic(text):
-    return any('а' <= c <= 'я' or 'А' <= c <= 'Я' for c in text)
+# Tozalash + transliteratsiya
+def clean_and_transliterate(text):
+    text = str(text).strip()
+    text = re.sub(r'[\u200c\xa0\u202f]+', '', text)  # ko‘rinmas belgilar
+    text = re.sub(r'\s+', '', text)  # bo‘sh joylar
+    return transliterate_ru_to_lat(text.lower()) if is_cyrillic(text) else text.lower()
 
-# Dori nomini topish
 def find_drug(drug_name, df):
-    drug_name = drug_name.strip()
-    df['Asl dorining nomi'] = df['Asl dorining nomi'].str.lower().str.strip()
-
-    if is_cyrillic(drug_name):
-        translit = transliterate_ru_to_lat(drug_name)
-    else:
-        translit = drug_name.lower()
+    drug_name = clean_and_transliterate(drug_name)
+    df['Asl dorining nomi'] = df['Asl dorining nomi'].astype(str).str.lower().str.strip()
 
     # To‘g‘ri moslik
-    result = df[df['Asl dorining nomi'] == translit]
+    result = df[df['Asl dorining nomi'] == drug_name]
     if not result.empty:
         return result
 
-    # Yaqin moslik (fuzzy)
-    matches = get_close_matches(translit, df['Asl dorining nomi'], n=1, cutoff=0.5)
+    # Yaqin moslik
+    matches = get_close_matches(drug_name, df['Asl dorining nomi'], n=1, cutoff=0.5)
     if matches:
         return df[df['Asl dorining nomi'] == matches[0]]
 
