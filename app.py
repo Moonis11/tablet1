@@ -111,7 +111,6 @@ def clean_drug_name(raw_name):
     cleaned = re.sub(r"[^a-zA-Zа-яА-ЯёЁ0-9\- ]", "", cleaned)
     return cleaned
 
-# Kirill → Lotin transliteratsiya
 def transliterate_ru_to_lat(text):
     ru_to_lat = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
@@ -127,37 +126,50 @@ def transliterate_ru_to_lat(text):
     }
     return ''.join(ru_to_lat.get(c, c) for c in text)
 
-# Kirill harfi bormi?
 def is_cyrillic(text):
     return any('а' <= c <= 'я' or 'А' <= c <= 'Я' for c in text)
 
-# Kiritilgan matnni tozalash + transliteratsiya qilish
 def normalize_input(text):
     text = str(text).strip()
-    text = re.sub(r'[\u200c\xa0\u202f]+', '', text)  # ko‘rinmas belgilar
-    text = re.sub(r'\s+', '', text)
+    text = re.sub(r'[\u200c\u202f\xa0\ufeff]+', '', text)  # maxsus belgilar
+    text = re.sub(r'\s+', '', text)  # bo‘sh joylar
     if is_cyrillic(text):
         text = transliterate_ru_to_lat(text)
     return text.lower()
 
-# Asosiy qidiruv funksiyasi
-def find_drug(user_input, df):
-    normalized = normalize_input(user_input)
+def find_drug(drug_name, df):
+    drug_name = normalize_input(drug_name)
     df['Asl dorining nomi'] = df['Asl dorining nomi'].astype(str).str.lower().str.strip()
 
     # Aniq moslik
-    match = df[df['Asl dorining nomi'] == normalized]
-    if not match.empty:
-        return match
+    exact = df[df['Asl dorining nomi'] == drug_name]
+    if not exact.empty:
+        return exact
 
-    # Yaqin moslik (agar aniq topilmasa)
-    possibilities = df['Asl dorining nomi'].tolist()
-    close_match = get_close_matches(normalized, possibilities, n=1, cutoff=0.5)
-    if close_match:
-        return df[df['Asl dorining nomi'] == close_match[0]]
+    # Yaqin moslik (ixtiyoriy)
+    matches = get_close_matches(drug_name, df['Asl dorining nomi'].tolist(), n=1, cutoff=0.5)
+    if matches:
+        return df[df['Asl dorining nomi'] == matches[0]]
 
     return None
 
+# --- Streamlit UI ---
+st.set_page_config(page_title="Dori izlash", page_icon="💊")
+st.title("💊 Dori ma'lumotlari")
+
+df = pd.read_csv("alternativa1.csv")
+df.columns = df.columns.str.strip()
+
+query = st.text_input("Dori nomini kiriting (lotin yoki kirill):")
+
+if query:
+    result = find_drug(query, df)
+
+    if result is not None:
+        st.success("✅ Topildi:")
+        st.dataframe(result)
+    else:
+        st.error("❌ Bunday dori topilmadi.")
 def section_title(title_text):
     st.markdown(
         f"<div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: Segoe UI;'>{title_text}</div>",
