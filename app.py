@@ -153,23 +153,6 @@ def find_drug(drug_name, df):
 
     return None
 
-# --- Streamlit UI ---
-st.set_page_config(page_title="Dori izlash", page_icon="💊")
-st.title("💊 Dori ma'lumotlari")
-
-df = pd.read_csv("alternativa1.csv")
-df.columns = df.columns.str.strip()
-
-query = st.text_input("Dori nomini kiriting (lotin yoki kirill):")
-
-if query:
-    result = find_drug(query, df)
-
-    if result is not None:
-        st.success("✅ Topildi:")
-        st.dataframe(result)
-    else:
-        st.error("❌ Bunday dori topilmadi.")
 def section_title(title_text):
     st.markdown(
         f"<div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: Segoe UI;'>{title_text}</div>",
