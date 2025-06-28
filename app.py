@@ -8,6 +8,7 @@ import traceback
 import streamlit.components.v1 as components
 import os
 from datetime import datetime
+from difflib import get_close_matches
 
 MAX_SIZE = (1024, 1024)
 
@@ -124,6 +125,32 @@ def transliterate_ru_to_lat(text):
         'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
     }
     return ''.join(ru_to_lat.get(c, c) for c in text)
+
+# Kirill harfi bormi?
+def is_cyrillic(text):
+    return any('а' <= c <= 'я' or 'А' <= c <= 'Я' for c in text)
+
+# Dori nomini topish
+def find_drug(drug_name, df):
+    drug_name = drug_name.strip()
+    df['Asl dorining nomi'] = df['Asl dorining nomi'].str.lower().str.strip()
+
+    if is_cyrillic(drug_name):
+        translit = transliterate_ru_to_lat(drug_name)
+    else:
+        translit = drug_name.lower()
+
+    # To‘g‘ri moslik
+    result = df[df['Asl dorining nomi'] == translit]
+    if not result.empty:
+        return result
+
+    # Yaqin moslik (fuzzy)
+    matches = get_close_matches(translit, df['Asl dorining nomi'], n=1, cutoff=0.5)
+    if matches:
+        return df[df['Asl dorining nomi'] == matches[0]]
+
+    return None
 
 def section_title(title_text):
     st.markdown(
