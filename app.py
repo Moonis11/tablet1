@@ -111,6 +111,7 @@ def clean_drug_name(raw_name):
     cleaned = re.sub(r"[^a-zA-Zа-яА-ЯёЁ0-9\- ]", "", cleaned)
     return cleaned
 
+# Kirill → Lotin transliteratsiya
 def transliterate_ru_to_lat(text):
     ru_to_lat = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
@@ -126,26 +127,34 @@ def transliterate_ru_to_lat(text):
     }
     return ''.join(ru_to_lat.get(c, c) for c in text)
 
-# Tozalash + transliteratsiya
-def clean_and_transliterate(text):
+# Kirill harfi bormi?
+def is_cyrillic(text):
+    return any('а' <= c <= 'я' or 'А' <= c <= 'Я' for c in text)
+
+# Kiritilgan matnni tozalash + transliteratsiya qilish
+def normalize_input(text):
     text = str(text).strip()
     text = re.sub(r'[\u200c\xa0\u202f]+', '', text)  # ko‘rinmas belgilar
-    text = re.sub(r'\s+', '', text)  # bo‘sh joylar
-    return transliterate_ru_to_lat(text.lower()) if is_cyrillic(text) else text.lower()
+    text = re.sub(r'\s+', '', text)
+    if is_cyrillic(text):
+        text = transliterate_ru_to_lat(text)
+    return text.lower()
 
-def find_drug(drug_name, df):
-    drug_name = clean_and_transliterate(drug_name)
+# Asosiy qidiruv funksiyasi
+def find_drug(user_input, df):
+    normalized = normalize_input(user_input)
     df['Asl dorining nomi'] = df['Asl dorining nomi'].astype(str).str.lower().str.strip()
 
-    # To‘g‘ri moslik
-    result = df[df['Asl dorining nomi'] == drug_name]
-    if not result.empty:
-        return result
+    # Aniq moslik
+    match = df[df['Asl dorining nomi'] == normalized]
+    if not match.empty:
+        return match
 
-    # Yaqin moslik
-    matches = get_close_matches(drug_name, df['Asl dorining nomi'], n=1, cutoff=0.5)
-    if matches:
-        return df[df['Asl dorining nomi'] == matches[0]]
+    # Yaqin moslik (agar aniq topilmasa)
+    possibilities = df['Asl dorining nomi'].tolist()
+    close_match = get_close_matches(normalized, possibilities, n=1, cutoff=0.5)
+    if close_match:
+        return df[df['Asl dorining nomi'] == close_match[0]]
 
     return None
 
