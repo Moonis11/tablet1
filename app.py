@@ -185,19 +185,56 @@ lang_choice = st.sidebar.radio("Til / Язык / Language:", list(languages.keys
 lang = languages[lang_choice]
 st.title(translations["title"][lang])
 
-uploaded_file = st.file_uploader(translations["upload_label"][lang], type=["jpg", "jpeg", "png"])
+def clear_image():
+    st.session_state.uploaded_image = None
 
-if uploaded_file:
+if 'uploaded_image' not in st.session_state:
+    st.session_state.uploaded_image = None
+    st.title("Rasm yuklash va o'chirish")
+
+
+if st.session_state.uploaded_image is None:
+    uploaded_file = st.file_uploader("Rasm yuklang", type=["png", "jpg", "jpeg"])
+    
+    
+    if uploaded_file is not None:
+        st.session_state.uploaded_image = uploaded_file
+        st.rerun()  # yoki st.rerun() sizning streamlit versiyangizga qarab
+
+if st.session_state.uploaded_image is not None:
     try:
-        image = Image.open(uploaded_file)
+        image = Image.open(st.session_state.uploaded_image)
         image = resize_image(image)
         image = fix_orientation(image)
 
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.image(image, caption="📸", use_container_width=True)
+        col_left, col_right = st.columns([1, 2])  # Chap va o'ng tomonlar
 
-        with col2:
+        with col_left:
+            cols = st.columns([0.1, 0.7])  # Ichki qator: kichik 'X' va katta rasm
+
+            with cols[0]:
+               st.markdown("<div style='margin-top:20px;'>", unsafe_allow_html=True)
+               if st.button("❌",key="clear_button_2"):
+                  st.session_state.uploaded_image = None
+                  st.rerun()
+               st.markdown("</div>", unsafe_allow_html=True)
+
+            with cols[1]:
+               st.markdown("<div style='margin-top:20px;'>", unsafe_allow_html=True)
+               st.image(image, caption="📸 Yuklangan rasm", use_container_width=True)
+               st.markdown("</div>", unsafe_allow_html=True)
+        with col_right:
+            # st.write("Bu yerga boshqa ma'lumotlar yoki kontent keladi")
+
+        # col1, col2 = st.columns([1,1])
+        # with col1:
+        #     if st.button("❌"):  # yoki “X” tugmasi uchun boshqa belgi
+        #        st.session_state.uploaded_image = None
+        #        st.rerun()
+
+        # with col2:
+        #     st.image(image, caption="📸 Yuklangan rasm", use_container_width=True)
+
             with st.spinner(translations["detecting"][lang]):
                 drug_text, confidence = extract_drug_info_by_cropping(image)
                 cleaned = clean_drug_name(drug_text)
@@ -220,7 +257,7 @@ if uploaded_file:
                            align-items: center;
                            background-color: #123024;
                            color: white;
-                           padding: 16px 24px;
+                           padding: 20px 24px;
                            border-radius: 12px;
                            font-family: 'Segoe UI', sans-serif;
                            font-weight: 600;
