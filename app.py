@@ -250,7 +250,7 @@ if uploaded_file:
                     """, height=130)
 
                     # 🔍 OCR aniqlik (dori nomining tagiga chiqadi)
-                    st.markdown(f"<div style='color:#999;font-size:13px;margin-top:1px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
 
                     # 🔄 Alternativ dorilar
                     section_title(translations["alt_drugs"][lang])
