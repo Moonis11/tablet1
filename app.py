@@ -380,7 +380,7 @@ if st.session_state.uploaded_image is not None:
             </div>
         </div>
     """, unsafe_allow_html=True)
-                 else:
+             else:
     # Katta ekranlar uchun yonma-yon
                   st.markdown(f"""
         <div style="
