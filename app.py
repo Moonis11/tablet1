@@ -361,26 +361,26 @@ if st.session_state.uploaded_image is not None:
 
                 # Dori nomi va narxini ko‘rsatish
                 if is_mobile:
-    # Telefon ko‘rinishi uchun ustma-ust
+                   # Telefon ko‘rinishi uchun ustma-ust
                    st.markdown(f"""
-        <div style="
-            background-color: #FDE9EA;
-            padding: 20px;
-            border-radius: 12px;
-            font-family: 'Segoe UI', sans-serif;
-            margin-top: 20px;
-            margin-bottom: 4px;
-            color: black;
-        ">
-            <div style="font-size: 24px; margin-bottom: 10px;">
-                {translations['drug_name'][lang]}: {nomi}
-            </div>
-            <div style="font-size: 22px;">
+                      <div style="
+                      background-color: #FDE9EA;
+                      padding: 20px;
+                      border-radius: 12px;
+                     font-family: 'Segoe UI', sans-serif;
+                     margin-top: 20px;
+                     margin-bottom: 4px;
+                     color: black;
+                 ">
+                <div style="font-size: 24px; margin-bottom: 10px;">
+                   {translations['drug_name'][lang]}: {nomi}
+                </div>
+               <div style="font-size: 22px;">
                 {translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}
+              </div>
             </div>
-        </div>
     """, unsafe_allow_html=True)
-             else:
+               else:
     # Katta ekranlar uchun yonma-yon
                   st.markdown(f"""
         <div style="
