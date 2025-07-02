@@ -400,6 +400,7 @@ if st.session_state.uploaded_image is not None:
             <div style="font-size: 24px;">{translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}</div>
         </div>
     """, unsafe_allow_html=True)
+    
                 # OCR aniqlik foizini ko‘rsatish
                 st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
 
