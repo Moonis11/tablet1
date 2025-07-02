@@ -361,24 +361,26 @@ if st.session_state.uploaded_image is not None:
 
                 # Dori nomi va narxini ko‘rsatish
                 components.html(f"""
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        background-color: #FDE9EA;
-                        padding: 20px 24px;
-                        border-radius: 12px;
-                        font-family: 'Segoe UI', sans-serif;
-                        font-weight: 400;
-                        margin-top: 20px;
-                        margin-bottom: 4px;
-                        color: black;
-                        
-                    ">
-                        <div style="font-size: 20px;">{translations['drug_name'][lang]}: {nomi}</div>
-                        <div style="font-size: 20px; text-align: right;">{translations['price_label'][lang]}: {narx}</div>
-                    </div>
-                """, height=130)
+    <div style="
+        display: flex;
+        flex-direction: {'column' if is_mobile else 'row'};
+        justify-content: space-between;
+        align-items: {'flex-start' if is_mobile else 'center'};
+        background-color: #FDE9EA;
+        padding: 20px 24px;
+        border-radius: 12px;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 400;
+        margin-top: 20px;
+        margin-bottom: 4px;
+        color: black;
+    ">
+        <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
+        <div style="font-size: 24px; text-align: right; margin-top: {'10px' if is_mobile else '0'};">
+            {translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}
+        </div>
+    </div>
+""", height=150)
 
                 # OCR aniqlik foizini ko‘rsatish
                 st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
