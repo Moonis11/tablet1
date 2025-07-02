@@ -9,6 +9,8 @@ import streamlit.components.v1 as components
 import os
 from datetime import datetime
 from difflib import get_close_matches
+from io import BytesIO
+import base64
 
 MAX_SIZE = (1024, 1024)
 
@@ -44,14 +46,16 @@ def load_drug_names():
 
 drug_names = load_drug_names()
 
-
-
-
-
 def fuzzy_match_drug_name(drug_name, df):
     all_drugs = df['Asl dorining nomi'].astype(str).str.lower().tolist()
     match = get_close_matches(drug_name.lower(), all_drugs, n=1, cutoff=0.7)
     return match[0] if match else None
+
+def image_to_base64(image):
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            return base64.b64encode(buffered.getvalue()).decode()
+
 
 def get_drug_info_from_csv(user_dori, df, lang):
     user_dori = user_dori.strip().lower()
@@ -84,7 +88,16 @@ def get_drug_info_from_csv(user_dori, df, lang):
         form_col = "Dori shakli"
         country_col = "Ishlab chiqargan mamlakat nomi"
 
-    nomi = row.get("Asl dorining nomi", "")
+    kirillcha_nomi = row.get("Asl dorining nomi (kiril)", "")
+    lotincha_nomi = row.get("Asl dorining nomi", "")
+
+    # Agar kirillcha yo‘q bo‘lsa, transliteratsiya qilib olamiz
+    if not kirillcha_nomi:
+       kirillcha_nomi = transliterate_lat_to_cyr(lotincha_nomi)
+
+    nomi = f"{lotincha_nomi} / {kirillcha_nomi}"
+
+    
     narx = row.get("Narxi (taxminiy)", "")
     tasir_modda = row.get("Tasir etuvchi modda", "").strip().lower()
 
@@ -102,6 +115,10 @@ def get_drug_info_from_csv(user_dori, df, lang):
         form_col: "Dori shakli",
         country_col: "Mamlakat"
     })
+    # 🔠 Lotincha / Кириллча ko‘rinishda chiqarish
+    alternativalar["Asl dorining nomi"] = alternativalar["Asl dorining nomi"].apply(
+    lambda x: f"{transliterate_lat_to_cyr(str(x))} / {x}" if not is_cyrillic(x) else f"{x} / {transliterate_ru_to_lat(str(x))}"
+    )
 
     return nomi, kasallik, instruktsiya, alternativalar, narx
 
@@ -128,14 +145,49 @@ def transliterate_ru_to_lat(text):
 
 def is_cyrillic(text):
     return any('а' <= c <= 'я' or 'А' <= c <= 'Я' for c in text)
+def transliterate_lat_to_cyr(text):
+    lat_to_cyr = {
+        'shch': 'щ', 'yo': 'ё', 'yu': 'ю', 'ya': 'я', 'ch': 'ч', 'sh': 'ш', 'ts': 'ц',
+        'a': 'а', 'b': 'б', 'd': 'д', 'e': 'е', 'f': 'ф', 'g': 'г', 'h': 'ҳ', 'i': 'и',
+        'j': 'ж', 'k': 'к', 'l': 'л', 'm': 'м', 'n': 'н', 'o': 'о', 'p': 'п', 'q': 'қ',
+        'r': 'р', 's': 'с', 't': 'т', 'u': 'у', 'v': 'в', 'x': 'х', 'y': 'й', 'z': 'з',
+        "'": 'ъ', 'ʼ': 'ъ', '’': 'ъ', '`': 'ъ'
+    }
+
+    specials = ['shch', 'yo', 'yu', 'ya', 'ch', 'sh', 'ts']
+    i = 0
+    result = ''
+    while i < len(text):
+        matched = False
+        for s in specials:
+            if text[i:i+len(s)].lower() == s:
+                rep = lat_to_cyr[s]
+                result += rep.upper() if text[i].isupper() else rep
+                i += len(s)
+                matched = True
+                break
+        if not matched:
+            ch = text[i]
+            rep = lat_to_cyr.get(ch.lower(), ch)
+            result += rep.upper() if ch.isupper() else rep
+            i += 1
+    return result
+
 
 def normalize_input(text):
     text = str(text).strip()
-    text = re.sub(r'[\u200c\u202f\xa0\ufeff]+', '', text)  # maxsus belgilar
-    text = re.sub(r'\s+', '', text)  # bo‘sh joylar
+    text = re.sub(r'[\u200c\u202f\xa0\ufeff]+', '', text)  # noaniq belgilarni tozalash
+    text = re.sub(r'\s+', '', text)  # bo‘sh joylarni olib tashlash
+
     if is_cyrillic(text):
-        text = transliterate_ru_to_lat(text)
-    return text.lower()
+        lotincha = transliterate_ru_to_lat(text)
+        kirilcha = text
+    else:
+        kirilcha = transliterate_lat_to_cyr(text)
+        lotincha = text
+
+    return lotincha.lower(), kirilcha.capitalize()
+
 
 def find_drug(drug_name, df):
     drug_name = normalize_input(drug_name)
@@ -155,7 +207,7 @@ def find_drug(drug_name, df):
 
 def section_title(title_text):
     st.markdown(
-        f"<div style='background-color: #123024; color: white; padding: 12px 18px; font-size: 18px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: Segoe UI;'>{title_text}</div>",
+        f"<div style='background-color: #FDE9EA; color: white; padding: 12px 18px; font-size: 30px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: Segoe UI;'>{title_text}</div>",
         unsafe_allow_html=True
     )
    
@@ -163,8 +215,21 @@ if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
 
 st.set_page_config(page_title="Tablet App", layout="wide")
+st.markdown("""
+    <style>
+        footer {visibility: hidden;}
+        body, .stApp {
+            background-color: white !important;
+            color: black !important;
+        }
+        .stMarkdown div {
+            color: black !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
 
+is_mobile = st.sidebar.toggle("📱 Telefon holatida ko‘rsatish", value=False)
 languages = {"Uzbek": "uz", "Русский": "ru", "English": "en"}
 translations = {
     "title": {"uz": "🧪 TabletAI", "ru": "🧪 ТаблетAI", "en": "🧪 TabletAI"},
@@ -185,8 +250,44 @@ lang_choice = st.sidebar.radio("Til / Язык / Language:", list(languages.keys
 lang = languages[lang_choice]
 st.title(translations["title"][lang])
 
+
+
 def clear_image():
     st.session_state.uploaded_image = None
+
+def style_alternativalar(df):
+    return df.style.set_properties(**{
+        'background-color': 'white',
+        'color': 'black'
+    })
+def render_alternativalar_html(df):
+    df = df.reset_index(drop=True)
+    html = df.to_html(classes='alt-table', border=1, justify='left', index=True)
+    style = """
+    <style>
+        .alt-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: black;
+        }
+        .alt-table th, .alt-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .alt-table thead th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .alt-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+    """
+    st.markdown(style + html, unsafe_allow_html=True)
+
 
 if 'uploaded_image' not in st.session_state:
     st.session_state.uploaded_image = None
@@ -201,40 +302,47 @@ if st.session_state.uploaded_image is None:
         st.session_state.uploaded_image = uploaded_file
         st.rerun()  # yoki st.rerun() sizning streamlit versiyangizga qarab
 
+
+
 if st.session_state.uploaded_image is not None:
     try:
         image = Image.open(st.session_state.uploaded_image)
         image = resize_image(image)
         image = fix_orientation(image)
+        
+        img_base64 = image_to_base64(image)
 
-        col_left, col_right = st.columns([1, 2])  # Chap va o'ng tomonlar
+        col0, col1, col2 = st.columns([0.05, 0.3, 0.7])
 
-        with col_left:
-            cols = st.columns([0.1, 0.7])  # Ichki qator: kichik 'X' va katta rasm
+        with col0:
+            clear_clicked = st.button("❌", key="clear_image_button")
+            st.markdown("""
+                <style>
+                div[data-testid="stButton"] button {
+                    margin-top: 7px;
+                    background-color: white !important;
+                    color: black !important;
+                    border: 1px solid #ccc !important;
+                    border-radius: 6px !important;
+                        margin-top: 20px;
+                }
+                </style>
+            """, unsafe_allow_html=True)
 
-            with cols[0]:
-               st.markdown("<div style='margin-top:20px;'>", unsafe_allow_html=True)
-               if st.button("❌",key="clear_button_2"):
-                  st.session_state.uploaded_image = None
-                  st.rerun()
-               st.markdown("</div>", unsafe_allow_html=True)
+            if clear_clicked:
+               st.session_state.uploaded_image = None
+               st.rerun()
 
-            with cols[1]:
-               st.markdown("<div style='margin-top:20px;'>", unsafe_allow_html=True)
-               st.image(image, caption="📸 Yuklangan rasm", use_container_width=True)
-               st.markdown("</div>", unsafe_allow_html=True)
-        with col_right:
-            # st.write("Bu yerga boshqa ma'lumotlar yoki kontent keladi")
+        # Rasmni ko‘rsatish
+        with col1:
+            st.markdown(f"""
+                <div style="position: relative; display: inline-block; width: 100%;">
+                    <img src="data:image/png;base64,{img_base64}" style="width: 100%; border-radius: 12px; margin-top: 20px;" />
+                </div>
+            """, unsafe_allow_html=True)
 
-        # col1, col2 = st.columns([1,1])
-        # with col1:
-        #     if st.button("❌"):  # yoki “X” tugmasi uchun boshqa belgi
-        #        st.session_state.uploaded_image = None
-        #        st.rerun()
-
-        # with col2:
-        #     st.image(image, caption="📸 Yuklangan rasm", use_container_width=True)
-
+        # Ma'lumotlar ustuni
+        with col2:
             with st.spinner(translations["detecting"][lang]):
                 drug_text, confidence = extract_drug_info_by_cropping(image)
                 cleaned = clean_drug_name(drug_text)
@@ -244,103 +352,112 @@ if st.session_state.uploaded_image is not None:
                 df = pd.read_csv("alternativa1.csv")
                 result = get_drug_info_from_csv(drug_name, df, lang)
 
+            if clear_clicked:
+                st.session_state.uploaded_image = None
+                st.experimental_rerun()
 
-                if result:
-                    nomi, kasallik, instruktsiya, alternativalar, narx = result
+            if result:
+                nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                    # 💊 Dori nomi + 💵 Narxi (qoramtir yashil fon)
-                    components.html(f"""
+                # Dori nomi va narxini ko‘rsatish
+                components.html(f"""
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        background-color: #FDE9EA;
+                        padding: 20px 24px;
+                        border-radius: 12px;
+                        font-family: 'Segoe UI', sans-serif;
+                        font-weight: 400;
+                        margin-top: 20px;
+                        margin-bottom: 4px;
+                        color: black;
+                        
+                    ">
+                        <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
+                        <div style="font-size: 30px; text-align: right;">{translations['price_label'][lang]}: {narx}</div>
+                    </div>
+                """, height=130)
+
+                # OCR aniqlik foizini ko‘rsatish
+                st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
+
+                # Expander funksiyasi
+                def styled_expander(title, content_func, expanded=False):
+                    st.markdown(f"""
                         <div style="
-                           display: flex;
-                           flex-wrap: wrap;
-                           justify-content: space-between;
-                           align-items: center;
-                           background-color: #123024;
-                           color: white;
-                           padding: 20px 24px;
-                           border-radius: 12px;
-                           font-family: 'Segoe UI', sans-serif;
-                           font-weight: 600;
-                           margin-top: 20px;
-                           margin-bottom: 4px;
-                        ">
-                            <div style="font-size: 20px; flex: 1 1 200px;">
-                                 {translations["drug_name"][lang]}: {nomi}
-                            </div>
-                            <div style="font-size: 18px; flex: 1 1 100px; text-align: right;">
-                                 {translations["price_label"][lang]}: {narx}
-                            </div>
-                            <div style="width: 100%; font-size: 16px; margin-top: 10px; display: none;" class="mobile-price">
-                                 {translations["price_label"][lang]}: {narx}
-                            </div>
-                        </div>
-                        <style>
-                            @media only screen and (max-width: 768px) {{
-                                .mobile-price {{
-                                    display: block !important;
-                                }}
-                                div[style*="display: flex;"] > div:nth-child(2) {{
-                                    display: none !important;
-                                }}
-                            }}
-                        </style>
-                    """, height=130)
-
-                    # 🔍 OCR aniqlik (dori nomining tagiga chiqadi)
-                    st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
-
-                    # 🔄 Alternativ dorilar
-                    section_title(translations["alt_drugs"][lang])
-                    alternativalar.index = range(1, len(alternativalar) + 1)
-                    st.dataframe(alternativalar, use_container_width=True, height=250)
-
-                    # 📋 Kasalliklar
-                    section_title(translations["illness"][lang])
-                    st.write(kasallik)
-
-                    # 🧾 Instruksiya (har bir qator `.` bilan ajralgan)
-                    section_title(translations["usage"][lang])
-                    formatted_instruksiya = "<br>".join([re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in str(instruktsiya).split("\n") if line.strip()])
-                    st.markdown(formatted_instruksiya, unsafe_allow_html=True)
-
-                    # 📌 Diskleymer
-                    st.markdown(f"""
-                        <div style='
-                            width: 100%;
-                            margin: 40px auto 20px auto;
-                            padding: 18px 24px;
-                            background-color: #123024;
-                            color: #ffffff;
-                            font-size: 17px;
-                            font-weight: 600;
-                            border-radius: 12px;
-                            font-family: "Segoe UI", Tahoma, sans-serif;
-                            text-align: center;
-                            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-                        '>
-                            {translations['disclaimer'][lang]}
-                        </div>
+                            background-color: #FDE9EA;
+                            color: black;
+                            font-size: 30px;
+                            font-weight: 400;
+                            padding: 10px 15px;
+                            border-radius: 8px;
+                            margin-bottom: 10px;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        ">{title}</div>
                     """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                         <div style='
-                             display: flex;
-                             justify-content: center;
-                             align-items: center;
-                             text-align: center;
-                             padding: 30px;
-                             background-color: #123024;
-                             border: 1px solid #ffeeba;
-                             border-radius: 10px;
-                             color: white;
-                             font-size: 17px;
-                             font-weight: 500;
-                             font-family: "Segoe UI", sans-serif;
-                             margin-top: 40px;
-                         '>
-                            {translations["not_found"][lang]}
-                          </div>
-                         """, unsafe_allow_html=True)
+                    with st.expander("", expanded=expanded):
+                        content_func()
+
+                # Alternativ dorilar
+                styled_expander(
+    translations["alt_drugs"][lang],
+    lambda: st.dataframe(alternativalar, use_container_width=True),
+    expanded=False
+)
+                
+                # Kasalliklar
+                styled_expander(translations["illness"][lang],lambda: st.markdown(f"<div style='font-size:25px; line-height:1.5;'>{kasallik}</div>", unsafe_allow_html=True), expanded=False)
+                
+                # Instruksiya
+                formatted_instruksiya = "<br>".join(
+                    [re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in str(instruktsiya).split("\n") if line.strip()]
+                )
+                #styled_expander(translations["usage"][lang], lambda: st.markdown(formatted_instruksiya, unsafe_allow_html=True), expanded=False)
+                styled_expander(
+                    translations["usage"][lang],
+                    lambda: st.markdown(
+                      f"<div style='font-size:25px; line-height:1.5;'>{formatted_instruksiya}</div>", unsafe_allow_html=True
+                    ),
+                    expanded=False
+                    )
+                # Diskleymer
+                st.markdown(f"""
+                    <div style='
+                        width: 100%;
+                        margin: 40px auto 20px auto;
+                        padding: 18px 24px;
+                        background-color: #FDE9EA;
+                        color: #ffffff;
+                        font-size: 17px;
+                        font-weight: 600;
+                        border-radius: 12px;
+                        font-family: "Segoe UI", Tahoma, sans-serif;
+                        text-align: center;
+                        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+                    '>{translations['disclaimer'][lang]}</div>
+                """, unsafe_allow_html=True)
+
+            else:
+                st.markdown(f"""
+                    <div style='
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        text-align: center;
+                        padding: 30px;
+                        background-color: #FDE9EA;
+                        border: 1px solid #ffeeba;
+                        border-radius: 10px;
+                        color: white;
+                        font-size: 17px;
+                        font-weight: 500;
+                        font-family: "Segoe UI", sans-serif;
+                        margin-top: 40px;
+                    '>{translations["not_found"][lang]}</div>
+                """, unsafe_allow_html=True)
+
     except Exception as e:
         st.error(f"Xatolik: {e}")
         st.text(traceback.format_exc())
