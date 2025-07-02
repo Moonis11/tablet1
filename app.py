@@ -375,8 +375,8 @@ if st.session_state.uploaded_image is not None:
                         color: black;
                         
                     ">
-                        <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
-                        <div style="font-size: 30px; text-align: right;">{translations['price_label'][lang]}: {narx}</div>
+                        <div style="font-size: 20px;">{translations['drug_name'][lang]}: {nomi}</div>
+                        <div style="font-size: 20px; text-align: right;">{translations['price_label'][lang]}: {narx}</div>
                     </div>
                 """, height=130)
 
