@@ -359,26 +359,7 @@ if st.session_state.uploaded_image is not None:
             if result:
                 nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                # Dori nomi va narxini ko‘rsatish
-                components.html(f"""
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        background-color: #FDE9EA;
-                        padding: 20px 24px;
-                        border-radius: 12px;
-                        font-family: 'Segoe UI', sans-serif;
-                        font-weight: 400;
-                        margin-top: 20px;
-                        margin-bottom: 4px;
-                        color: black;
-                        
-                    ">
-                        <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
-                        <div style="font-size: 30px; text-align: right;">{translations['price_label'][lang]}: {narx}</div>
-                    </div>
-                """, height=130)
+                
                 if is_mobile:
     # Telefon ko‘rinishi uchun ustma-ust
                    st.markdown(f"""
