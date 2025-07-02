@@ -359,8 +359,66 @@ if st.session_state.uploaded_image is not None:
             if result:
                 nomi, kasallik, instruktsiya, alternativalar, narx = result
 
-                
-
+                # Dori nomi va narxini ko‘rsatish
+                components.html(f"""
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        background-color: #FDE9EA;
+                        padding: 20px 24px;
+                        border-radius: 12px;
+                        font-family: 'Segoe UI', sans-serif;
+                        font-weight: 400;
+                        margin-top: 20px;
+                        margin-bottom: 4px;
+                        color: black;
+                        
+                    ">
+                        <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
+                        <div style="font-size: 30px; text-align: right;">{translations['price_label'][lang]}: {narx}</div>
+                    </div>
+                """, height=130)
+                if is_mobile:
+    # Telefon ko‘rinishi uchun ustma-ust
+                   st.markdown(f"""
+        <div style="
+            background-color: #FDE9EA;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Segoe UI', sans-serif;
+            margin-top: 20px;
+            margin-bottom: 4px;
+            color: black;
+        ">
+            <div style="font-size: 24px; margin-bottom: 10px;">
+                {translations['drug_name'][lang]}: {nomi}
+            </div>
+            <div style="font-size: 22px;">
+                {translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}
+            </div>
+        </div>
+               """, unsafe_allow_html=True)
+                else:
+    # Katta ekranlar uchun yonma-yon
+                 st.markdown(f"""
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #FDE9EA;
+            padding: 20px 24px;
+            border-radius: 12px;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 400;
+            margin-top: 20px;
+            margin-bottom: 4px;
+            color: black;
+        ">
+            <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
+            <div style="font-size: 24px;">{translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}</div>
+        </div>
+    """, unsafe_allow_html=True)
                 # OCR aniqlik foizini ko‘rsatish
                 st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
 
@@ -370,7 +428,7 @@ if st.session_state.uploaded_image is not None:
                         <div style="
                             background-color: #FDE9EA;
                             color: black;
-                            font-size: 20px;
+                            font-size: 30px;
                             font-weight: 400;
                             padding: 10px 15px;
                             border-radius: 8px;
@@ -389,7 +447,7 @@ if st.session_state.uploaded_image is not None:
 )
                 
                 # Kasalliklar
-                styled_expander(translations["illness"][lang],lambda: st.markdown(f"<div style='font-size:20px; line-height:1.5;'>{kasallik}</div>", unsafe_allow_html=True), expanded=False)
+                styled_expander(translations["illness"][lang],lambda: st.markdown(f"<div style='font-size:25px; line-height:1.5;'>{kasallik}</div>", unsafe_allow_html=True), expanded=False)
                 
                 # Instruksiya
                 formatted_instruksiya = "<br>".join(
@@ -399,7 +457,7 @@ if st.session_state.uploaded_image is not None:
                 styled_expander(
                     translations["usage"][lang],
                     lambda: st.markdown(
-                      f"<div style='font-size:20px; line-height:1.5;'>{formatted_instruksiya}</div>", unsafe_allow_html=True
+                      f"<div style='font-size:25px; line-height:1.5;'>{formatted_instruksiya}</div>", unsafe_allow_html=True
                     ),
                     expanded=False
                     )
