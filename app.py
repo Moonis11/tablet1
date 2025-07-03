@@ -1,484 +1,497 @@
 import streamlit as st
+from PIL import Image
 import pandas as pd
-from PIL import Image, ExifTags
-from oracle import extract_drug_info_by_cropping
 import re
-from difflib import get_close_matches
 import traceback
-import streamlit.components.v1 as components
-import os
-from datetime import datetime
-from difflib import get_close_matches
-from io import BytesIO
 import base64
+from voiceapp import AudioProcessor
+from imageapp import (
+    resize_image, fix_orientation, image_to_base64, clean_drug_name,
+    transliterate_ru_to_lat, is_cyrillic, get_drug_info_from_csv
+)
+from oracle import extract_drug_info_by_cropping
 
-MAX_SIZE = (1024, 1024)
+st.set_page_config(page_title="Tablet AI", layout="wide")
 
-def resize_image(img):
-    img.thumbnail(MAX_SIZE)
-    return img
+languages = {"Uzbek": "uz", "Русский": "ru", "English": "en", "Кирил": "kiril"}
 
-def fix_orientation(img):
-    try:
-        for orientation in ExifTags.TAGS.keys():
-            if ExifTags.TAGS[orientation] == 'Orientation':
-                break
-        exif = img._getexif()
-        if exif is not None:
-            orientation_val = exif.get(orientation)
-            if orientation_val == 3:
-                img = img.rotate(180, expand=True)
-            elif orientation_val == 6:
-                img = img.rotate(270, expand=True)
-            elif orientation_val == 8:
-                img = img.rotate(90, expand=True)
-    except Exception:
-        pass
-    return img
+translations = {
+    "title": {
+        "uz": "🧪 TabletAI",
+        "ru": "🧪 ТаблетAI",
+        "en": "🧪 TabletAI",
+        "kiril": "🧪 ТаблетAI"
+    },
+    "upload_label": {
+        "uz": "Rasm yuklang",
+        "ru": "Загрузите изображение",
+        "en": "Upload an image",
+        "kiril": "Расм юкланг"
+    },
+    "detecting": {
+        "uz": "🔍 Dori nomi aniqlanmoqda...",
+        "ru": "🔍 Название лекарства определяется...",
+        "en": "🔍 Detecting drug name...",
+        "kiril": "🔍 Дори номи аниқланмоқда..."
+    },
+    "not_found": {
+        "uz": "💬 Dori topilmadi.",
+        "ru": "💬 Лекарство не найдено.",
+        "en": "💬 Drug not found.",
+        "kiril": "💬 Дори топилмади."
+    },
+    "alt_drugs": {
+        "uz": "Alternativ dorilar",
+        "ru": "Альтернативные лекарства",
+        "en": "Alternative Drugs",
+        "kiril": "Альтернатив дорилар"
+    },
+    "illness": {
+        "uz": "Kasalliklar",
+        "ru": "Заболевания",
+        "en": "Illnesses",
+        "kiril": "Касалликлар"
+    },
+    "usage": {
+        "uz": "Instruksiya",
+        "ru": "Инструкция",
+        "en": "Instruction",
+        "kiril": "Инструкция"
+    },
+    "disclaimer": {
+        "uz": " Diqqat: bu dastur tibbiy maslahat emas.",
+        "ru": " Внимание: это не медицинская консультация.",
+        "en": " Note: This is not medical advice.",
+        "kiril": " Диққат: бу дастур тиббий маслаҳат емас."
+    },
+    "price_label": {
+        "uz": "Narxi",
+        "ru": "Цена",
+        "en": "Price",
+        "kiril": "Нархи"
+    },
+    "drug_name": {
+        "uz": "Dori nomi",
+        "ru": "Название",
+        "en": "Drug name",
+        "kiril": "Дори номи"
+    },
+    "history_title": {
+        "uz": "Tekshiruv tarixi",
+        "ru": "История проверок",
+        "en": "Search History",
+        "kiril": "Текширув тарихи"
+    },
+    "image_upload_title": {
+        "uz": "Rasm yuklang",
+        "ru": "Загрузите изображение",
+        "en": "Upload Image",
+        "kiril": "Расм юкланг"
+    },
+    "voice_recording_title": {
+        "uz": "Ovoz yozilmoqda...",
+        "ru": "Голос записывается...",
+        "en": "Recording voice...",
+        "kiril": "Овоз ёзилмоқда..."
+    }
+}
 
-# CSV yuklash
 
-@st.cache_data
-def load_drug_names():
-    df = pd.read_csv("alternativa1.csv")
-    return df["Asl dorining nomi"].str.lower().str.strip().tolist()
+lang_choice = st.sidebar.radio("Til / Language / Язык", list(languages.keys()))
+lang = languages[lang_choice]
+
+def transliterate_to_cyrillic(text):
+    mapping = {
+        'a': 'а', 'b': 'б', 'd': 'д', 'e': 'е', 'f': 'ф', 'g': 'г', 'h': 'ҳ',
+        'i': 'и', 'j': 'ж', 'k': 'к', 'l': 'л', 'm': 'м', 'n': 'н', 'o': 'о',
+        'p': 'п', 'q': 'қ', 'r': 'р', 's': 'с', 't': 'т', 'u': 'у', 'v': 'в',
+        'x': 'х', 'y': 'й', 'z': 'з', 'ʼ': 'ъ', "'": 'ъ', 'sh': 'ш', 'ch': 'ч',
+        'ng': 'нг', 'ya': 'я', 'yo': 'ё', 'yu': 'ю', 'ts': 'ц', 'é': 'э'
+    }
+
+    for latin, cyrillic in sorted(mapping.items(), key=lambda x: -len(x[0])):
+        text = re.sub(rf'\b{latin}\b', cyrillic, text, flags=re.IGNORECASE)
+        text = re.sub(latin, cyrillic, text, flags=re.IGNORECASE)
+    return text
+
+# 🔹 ALT DRUG ICON + Sarlavha
+def get_base64_image(image_path):
+        with open(image_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    
+# ✅ SHU YERGA QO‘YING!
+def clear_image():
+    st.session_state.uploaded_image = None
+    st.session_state.voice_mode = False
+    st.session_state.current_expanded = None
+
+# Light mode styling
+st.markdown("""
+    <style>
+    html, body, [class*="css"]  {
+        background-color: #ffffff;
+        color: #111111;
+    }
+    .stButton>button {
+        background-color: #f0f0f0;
+        color: #333;
+        border: 1px solid #ccc;
+        padding: 0.5em 1em;
+        border-radius: 6px;
+    }
+    .stMarkdown h3 {
+        color: #004d40;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title(translations["title"][lang])
 
 
-drug_names = load_drug_names()
+df = pd.read_csv("alternativa1.csv")
 
-def fuzzy_match_drug_name(drug_name, df):
-    all_drugs = df['Asl dorining nomi'].astype(str).str.lower().tolist()
-    match = get_close_matches(drug_name.lower(), all_drugs, n=1, cutoff=0.7)
-    return match[0] if match else None
+for key, default in {
+    "uploaded_image": None,
+    "voice_mode": False,
+    "history": [],
+    "current_expanded": None,
+    "history_expanded": set(),
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-def image_to_base64(image):
+def add_to_history(item_type, data, result):
+    if result:
+        if len(st.session_state.history) >= 10:
+            st.session_state.history.pop(0)
+        st.session_state.history.append({
+            "type": item_type,
+            "data": data,
+            "result": result
+        })
+
+def render_drug_info(result, expanded=True):
+    
+
+    nomi, kasallik, instruktsiya, alternativalar, narx = result
+
+    if lang == "ru":
+        nomi = transliterate_to_cyrillic(nomi).capitalize()
+
+    if lang == "kiril":
+        nomi = transliterate_to_cyrillic(nomi).capitalize()
+        kasallik = transliterate_to_cyrillic(kasallik)
+        instruktsiya = transliterate_to_cyrillic(instruktsiya)
+        alternativalar.columns = [transliterate_to_cyrillic(col) for col in alternativalar.columns]
+        alternativalar = alternativalar.applymap(lambda x: transliterate_to_cyrillic(str(x)))
+ 
+    # 🔹 ALT DRUG ICON + Sarlavha
+    def get_base64_image(image_path):
+        with open(image_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+
+
+    drug_icon = get_base64_image("images/drug_icon.png")
+    
+
+# Dori nomi va narxi bir qatorda
+    st.markdown(f"""
+<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #ccc; padding-bottom: 10px;'>
+    <!-- Dori nomi chapda -->
+    <div style='display: flex; align-items: center; gap: 10px;'>
+        <img src='data:image/png;base64,{drug_icon}' width='30'>
+        <span style='font-size: 30px; font-weight: bold;'>{nomi}</span>
+    </div>
+    
+</div>
+""", unsafe_allow_html=True)
+    
+    price_icon = get_base64_image("images/price_icon.png")
+    if not price_icon:
+       st.warning("Price icon yuklanmadi!")
+    else:
+       st.markdown(f"""
+    <div style='display: flex; align-items: center; gap: 12px; font-size: 30px; font-weight: bold; color: white;'>
+        <img src='data:image/png;base64,{price_icon}' width='26'>
+        <span>{narx}</span>
+    </div>
+    <hr style="margin-top: 0; margin-bottom: 10px; border: 1px #ddd;">
+    """, unsafe_allow_html=True)
+    
+
+
+    alt_icon = get_base64_image("images/alt_drugs_icon.png")
+
+    st.markdown(f"""
+<div style='display:flex; align-items:center; gap:10px; margin-bottom:10px;'>
+    <img src='data:image/png;base64,{alt_icon}' width='30'>
+    <span style='font-size:30px; font-weight:bold;'>{translations['alt_drugs'][lang]}</span>
+</div>
+""", unsafe_allow_html=True)
+    with st.expander("", expanded=True):
+        st.dataframe(alternativalar, use_container_width=True)
+
+
+    illness_icon = get_base64_image("images/illness_icon.png")
+
+    st.markdown(f"""
+<div style='display:flex; align-items:center; gap:10px; margin-bottom:10px;'>
+    <img src='data:image/png;base64,{illness_icon}' width='30'>
+    <span style='font-size:30px; font-weight:bold;'>{translations['illness'][lang]}</span>
+</div>
+""", unsafe_allow_html=True)   
+
+    with st.expander("", expanded=False):
+        st.markdown(f"<div style='font-size:20px'>{kasallik}</div>", unsafe_allow_html=True)
+   
+   
+     # 🧾 Instruksiya
+    instruction_icon = get_base64_image("images/instruction_icon.png")
+
+    st.markdown(f"""
+<div style='display:flex; align-items:center; gap:10px; margin-bottom:10px;'>
+    <img src='data:image/png;base64,{instruction_icon}' width='30'>
+    <span style='font-size:30px; font-weight:bold;'>{translations['usage'][lang]}</span>
+</div>
+""", unsafe_allow_html=True)
+    with st.expander("", expanded=False):
+        formatted_instruksiya = "<br>".join([
+            re.sub(r"^(\u2022|\d+[\.\)]|\-|\u2022)?\s*", "", line).rstrip('.') + "."
+            for line in str(instruktsiya).split("\n") if line.strip()
+        ])
+        st.markdown(f"<div style='font-size:20px'>{formatted_instruksiya}</div>", unsafe_allow_html=True)
+ 
+ 
+ #  Disclaimer
+    disclaimer_icon = get_base64_image("images/disclaimer_icon.png")
+    st.markdown(f"""
+<div style='display: flex; align-items: center; background-color:#194522;
+            padding: 15px; border-radius: 10px; border: 1px solid #ccc;
+            font-size: 20px; color: white; gap: 12px;'>
+    <img src='data:image/png;base64,{disclaimer_icon}' width='40'>
+    <div>
+        <span style='font-weight: bold;'> {translations['disclaimer'][lang]}</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+       
+    
+
+def render_history():
+    global history_icon
+    st.markdown("---")
+    history_icon = get_base64_image("images/history_icon.png") 
+    st.markdown(f"""
+<div style='display: flex; align-items: center; gap: 10px; margin-top: 20px; margin-bottom: 10px;'>
+    <img src='data:image/png;base64,{history_icon}' width='28'>
+    <span style='font-size: 26px; font-weight: bold;'>{translations['history_title'][lang]}</span>
+</div>
+""", unsafe_allow_html=True)
+    max_visible = 3
+    full_history = st.session_state.history[-10:][::-1]  # So‘nggi 10 ta, teskari tartibda
+    short_history = full_history[:max_visible]
+    hidden_history = full_history[max_visible:]
+
+    def render_entry(item, idx):
+        try:
+            result = item["result"]
+            nomi = result[0]
+            narx = result[4]
+            item_type = item["type"]
+        except KeyError:
+            return
+        
+        drug_icon = get_base64_image("images/drug_icon.png")
+        price_icon = get_base64_image("images/price_icon.png")
+
+        col1, col2 = st.columns([1, 9])
+        with col1:
+            if item_type == "image":
+                try:
+                    img = Image.open(item["data"])
+                    img = resize_image(img, max_size=(60, 60))
+                    img = fix_orientation(img)
+                    st.image(img, width=50)
+                except:
+                    st.markdown("🖼️")
+            else:
+                st.markdown("🎤", unsafe_allow_html=True)
+
+        with col2:
+            st.markdown(f"""
+        <div style='display:flex; align-items:center; gap:10px; font-size:18px; font-weight:bold; margin-bottom:5px;'>
+            <img src='data:image/png;base64,{drug_icon}' width='22'>
+            <span>{nomi}</span>
+            <img src='data:image/png;base64,{price_icon}' width='20'>
+            <span>{narx}</span>
+        </div>
+        """, unsafe_allow_html=True)
+            toggle_key = f"history_expand_{idx}"
+            is_expanded = st.toggle("Ko‘proq ma’lumot", key=toggle_key)
+            if is_expanded:
+                with st.container():
+                    render_drug_info(result, expanded=False)
+
+    for idx, item in enumerate(short_history):
+        render_entry(item, idx)
+
+    if hidden_history:
+        if st.toggle("🕽️ Davomini ko‘rish", key="show_more_history"):
+            for idx, item in enumerate(hidden_history, start=max_visible):
+                render_entry(item, idx)
+
+
+if st.session_state.uploaded_image is None and not st.session_state.voice_mode:
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"### {translations['image_upload_title'][lang]}")
+        uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png"], key="upload")
+        if uploaded_file:
+            st.session_state.uploaded_image = uploaded_file
+            st.rerun()
+    with col2:
+        st.markdown(f"### {translations['voice_recording_title'][lang]}")
+        if st.button("🎤 Voice boshlash"):
+            st.session_state.voice_mode = True
+            st.rerun()
+
+
+elif st.session_state.voice_mode:
+    import streamlit_webrtc
+
+    ctx = streamlit_webrtc.webrtc_streamer(
+        key="speech",
+        audio_processor_factory=AudioProcessor,
+        media_stream_constraints={"video": False, "audio": True},
+        async_processing=True
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"### {translations['voice_recording_title'][lang]}")
+    with col2:
+        if st.button("🔍 Izlash"):
+            if ctx.audio_processor:
+                transcript = ctx.audio_processor.get_transcript()
+                if transcript:
+                    if lang == "kiril":
+                        transcript = transliterate_to_cyrillic(transcript)
+                    st.success(f"🎧 {translations['drug_name'][lang]}: {transcript}")
+                    result = get_drug_info_from_csv(transcript, df, lang)
+                    if result:
+                        add_to_history("voice", transcript, result)
+                        render_drug_info(result)
+                    else:
+                        st.warning(translations["not_found"][lang])
+                else:
+                    st.warning("❗ Ovoz aniqlanmadi")
+        if st.button("❌ Voice rejimini to‘xtatish"):
+            st.session_state.voice_mode = False
+            st.rerun()
+
+            st.markdown("""
+<style>
+    div.stButton > button#clear_image_button {
+        background-color: #e74c3c;  /* Qizil fon */
+        color: white;               /* Oq shrift */
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 10px 20px;
+        border: none;
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+    }
+    div.stButton > button#clear_image_button:hover {
+        background-color: #c0392b;  /* Hover paytida qorong‘i qizil */
+    }
+                        
+</style>
+""", unsafe_allow_html=True)
+            
+    st.markdown("""
+<style>
+.glass-box {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+</style>
+""", unsafe_allow_html=True)
+
+elif st.session_state.uploaded_image is not None:
+    col1, col2 = st.columns([0.4, 0.6])
+    with col1:
+        st.markdown("<div class='glass-box'>", unsafe_allow_html=True)
+
+        image = Image.open(st.session_state.uploaded_image)
+        image = fix_orientation(resize_image(image, max_size=(300, 300)))
+        image = image.convert("RGB") 
+
+        def image_to_base64(image):
+            from io import BytesIO
             buffered = BytesIO()
             image.save(buffered, format="PNG")
             return base64.b64encode(buffered.getvalue()).decode()
 
-
-def get_drug_info_from_csv(user_dori, df, lang):
-    user_dori = user_dori.strip().lower()
-    df['Asl dorining nomi lower'] = df['Asl dorining nomi'].astype(str).str.lower()
-    df['Tasir etuvchi modda lower'] = df['Tasir etuvchi modda'].astype(str).str.lower()
-
-    if user_dori not in df['Asl dorining nomi lower'].values:
-        fuzzy_match = fuzzy_match_drug_name(user_dori, df)
-        if fuzzy_match:
-            user_dori = fuzzy_match
-        else:
-            return None
-
-    row = df[df['Asl dorining nomi lower'] == user_dori].iloc[0]
-
-    # Tilga qarab ustunlarni tanlash
-    if lang == "ru":
-        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi rus", "")
-        instruktsiya = row.get("Instruksiya (foydalanish tartibi  rus", "")
-        form_col = "Dori shakli ruscha"
-        country_col = "Ishlab chiqargan mamlakat nomi rus"
-    elif lang == "en":
-        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi eng", "")
-        instruktsiya = row.get("Instruksiya (foydalanish tartibi)  eng", "")
-        form_col = "Dori shakli eng"
-        country_col = "Ishlab chiqargan mamlakat nomi eng"
-    else:
-        kasallik = row.get("Qaysi kasalliklarda qo‘llaniladi", "")
-        instruktsiya = row.get("Instruksiya (foydalanish tartibi)", "")
-        form_col = "Dori shakli"
-        country_col = "Ishlab chiqargan mamlakat nomi"
-
-    kirillcha_nomi = row.get("Asl dorining nomi (kiril)", "")
-    lotincha_nomi = row.get("Asl dorining nomi", "")
-
-    # Agar kirillcha yo‘q bo‘lsa, transliteratsiya qilib olamiz
-    if not kirillcha_nomi:
-       kirillcha_nomi = transliterate_lat_to_cyr(lotincha_nomi)
-
-    nomi = f"{lotincha_nomi} / {kirillcha_nomi}"
-
-    
-    narx = row.get("Narxi (taxminiy)", "")
-    tasir_modda = row.get("Tasir etuvchi modda", "").strip().lower()
-
-    # Agar form_col yoki country_col CSVda mavjud bo‘lmasa, xatolik bermasligi uchun tekshiramiz
-    if form_col not in df.columns or country_col not in df.columns:
-        form_col = "Dori shakli"
-        country_col = "Ishlab chiqargan mamlakat nomi"
-
-    alternativalar = df[
-        (df['Tasir etuvchi modda lower'] == tasir_modda) &
-        (df['Asl dorining nomi lower'] != user_dori)
-    ][[
-        "Asl dorining nomi", "Tasir etuvchi modda", form_col, country_col, "Narxi (taxminiy)"
-    ]].rename(columns={
-        form_col: "Dori shakli",
-        country_col: "Mamlakat"
-    })
-    # 🔠 Lotincha / Кириллча ko‘rinishda chiqarish
-    alternativalar["Asl dorining nomi"] = alternativalar["Asl dorining nomi"].apply(
-    lambda x: f"{transliterate_lat_to_cyr(str(x))} / {x}" if not is_cyrillic(x) else f"{x} / {transliterate_ru_to_lat(str(x))}"
-    )
-
-    return nomi, kasallik, instruktsiya, alternativalar, narx
-
-
-def clean_drug_name(raw_name):
-    cleaned = re.split(r"[\u00AE\u00A9\u2122]", raw_name)[0].strip()
-    cleaned = re.sub(r"[^a-zA-Zа-яА-ЯёЁ0-9\- ]", "", cleaned)
-    return cleaned
-
-def transliterate_ru_to_lat(text):
-    ru_to_lat = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-        'ф': 'f', 'х': 'x', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
-        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-        'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
-        'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
-        'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
-        'Ф': 'F', 'Х': 'X', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
-        'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
-    }
-    return ''.join(ru_to_lat.get(c, c) for c in text)
-
-def is_cyrillic(text):
-    return any('а' <= c <= 'я' or 'А' <= c <= 'Я' for c in text)
-def transliterate_lat_to_cyr(text):
-    lat_to_cyr = {
-        'shch': 'щ', 'yo': 'ё', 'yu': 'ю', 'ya': 'я', 'ch': 'ч', 'sh': 'ш', 'ts': 'ц',
-        'a': 'а', 'b': 'б', 'd': 'д', 'e': 'е', 'f': 'ф', 'g': 'г', 'h': 'ҳ', 'i': 'и',
-        'j': 'ж', 'k': 'к', 'l': 'л', 'm': 'м', 'n': 'н', 'o': 'о', 'p': 'п', 'q': 'қ',
-        'r': 'р', 's': 'с', 't': 'т', 'u': 'у', 'v': 'в', 'x': 'х', 'y': 'й', 'z': 'з',
-        "'": 'ъ', 'ʼ': 'ъ', '’': 'ъ', '`': 'ъ'
-    }
-
-    specials = ['shch', 'yo', 'yu', 'ya', 'ch', 'sh', 'ts']
-    i = 0
-    result = ''
-    while i < len(text):
-        matched = False
-        for s in specials:
-            if text[i:i+len(s)].lower() == s:
-                rep = lat_to_cyr[s]
-                result += rep.upper() if text[i].isupper() else rep
-                i += len(s)
-                matched = True
-                break
-        if not matched:
-            ch = text[i]
-            rep = lat_to_cyr.get(ch.lower(), ch)
-            result += rep.upper() if ch.isupper() else rep
-            i += 1
-    return result
-
-
-def normalize_input(text):
-    text = str(text).strip()
-    text = re.sub(r'[\u200c\u202f\xa0\ufeff]+', '', text)  # noaniq belgilarni tozalash
-    text = re.sub(r'\s+', '', text)  # bo‘sh joylarni olib tashlash
-
-    if is_cyrillic(text):
-        lotincha = transliterate_ru_to_lat(text)
-        kirilcha = text
-    else:
-        kirilcha = transliterate_lat_to_cyr(text)
-        lotincha = text
-
-    return lotincha.lower(), kirilcha.capitalize()
-
-
-def find_drug(drug_name, df):
-    drug_name = normalize_input(drug_name)
-    df['Asl dorining nomi'] = df['Asl dorining nomi'].astype(str).str.lower().str.strip()
-
-    # Aniq moslik
-    exact = df[df['Asl dorining nomi'] == drug_name]
-    if not exact.empty:
-        return exact
-
-    # Yaqin moslik (ixtiyoriy)
-    matches = get_close_matches(drug_name, df['Asl dorining nomi'].tolist(), n=1, cutoff=0.5)
-    if matches:
-        return df[df['Asl dorining nomi'] == matches[0]]
-
-    return None
-
-def section_title(title_text):
-    st.markdown(
-        f"<div style='background-color: #FDE9EA; color: white; padding: 12px 18px; font-size: 30px; font-weight: 700; border-radius: 8px; margin-top: 25px; margin-bottom: 10px; font-family: Segoe UI;'>{title_text}</div>",
-        unsafe_allow_html=True
-    )
-   
-if "uploaded_image" not in st.session_state:
-    st.session_state.uploaded_image = None
-
-st.set_page_config(page_title="Tablet App", layout="wide")
-st.markdown("""
-    <style>
-        footer {visibility: hidden;}
-        body, .stApp {
-            background-color: white !important;
-            color: black !important;
-        }
-        .stMarkdown div {
-            color: black !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
-st.markdown("<style>footer {visibility: hidden;}</style>", unsafe_allow_html=True)
-
-is_mobile = st.sidebar.toggle("📱 Telefon holatida ko‘rsatish", value=False)
-languages = {"Uzbek": "uz", "Русский": "ru", "English": "en"}
-translations = {
-    "title": {"uz": "🧪 TabletAI", "ru": "🧪 ТаблетAI", "en": "🧪 TabletAI"},
-    "upload_label": {"uz": "Rasm yuklang", "ru": "Загрузите изображение", "en": "Upload an image"},
-    "detecting": {"uz": "🔍 Dori nomi aniqligi...", "ru": "🔍 Точность названия препарата...", "en": "🔍 Drug name accuracy..."},
-    "not_found": {"uz": "💬 Oops! Izlangan dori vositasi bazada hozircha yo‘q. Lekin tizim muntazam yangilanmoqda. Keyinroq yana urinib ko‘ring.", "ru": "💬 Упс! Искомое лекарство пока отсутствует в базa данных. Но система регулярно обновляется. Попробуйте позже.",
-                  "en": "💬 Oops! The medicine you're looking for is not yet in database. But the system is constantly being updated. Please try again later."},
-    "alt_drugs": {"uz": "🔄 Alternativ dorilar", "ru": "🔄 Альтернативные лекарства", "en": "🔄 Alternative Drugs"},
-    "illness": {"uz": "📋 Davolash uchun mo‘ljallangan holatlar", "ru": "📋 Состояния, для которых предназначено лечение", "en": "📋 Conditions targeted for treatment"},
-    "usage": {"uz": "🧾 Instruksiya", "ru": "🧾 Инструкция", "en": "🧾 Instructions"},
-    "not_detected": {"uz": "❗ Dori nomi aniqlanmadi. Rasmni aniqroq yuklang.", "ru": "❗ Не удалось определить название. Загрузите более чёткое изображение.", "en": "❗ Could not detect the drug name. Please upload a clearer image."},
-    "disclaimer": {"uz": "📌 Diqqat: Bu dastur tibbiy maslahat o‘rnini bosa olmaydi...", "ru": "📌 Внимание: Это приложение не заменяет консультацию врача...", "en": "📌 Note: This app does not replace medical advice..."},
-    "price_label": {"uz": "💵 Narxi", "ru": "💵 Цена", "en": "💵 Price"},
-    "drug_name": {"uz": "💊 Dori nomi", "ru": "💊 Название препарата", "en": "💊 Drug name"}
-}
-
-lang_choice = st.sidebar.radio("Til / Язык / Language:", list(languages.keys()))
-lang = languages[lang_choice]
-st.title(translations["title"][lang])
-
-
-
-def clear_image():
-    st.session_state.uploaded_image = None
-
-def style_alternativalar(df):
-    return df.style.set_properties(**{
-        'background-color': 'white',
-        'color': 'black'
-    })
-def render_alternativalar_html(df):
-    df = df.reset_index(drop=True)
-    html = df.to_html(classes='alt-table', border=1, justify='left', index=True)
-    style = """
-    <style>
-        .alt-table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: black;
-        }
-        .alt-table th, .alt-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .alt-table thead th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        .alt-table tbody tr:hover {
-            background-color: #f5f5f5;
-        }
-    </style>
-    """
-    st.markdown(style + html, unsafe_allow_html=True)
-
-
-if 'uploaded_image' not in st.session_state:
-    st.session_state.uploaded_image = None
-    st.title("Rasm yuklash va o'chirish")
-
-
-if st.session_state.uploaded_image is None:
-    uploaded_file = st.file_uploader("Rasm yuklang", type=["png", "jpg", "jpeg"])
-    
-    
-    if uploaded_file is not None:
-        st.session_state.uploaded_image = uploaded_file
-        st.rerun()  # yoki st.rerun() sizning streamlit versiyangizga qarab
-
-
-
-if st.session_state.uploaded_image is not None:
-    try:
-        image = Image.open(st.session_state.uploaded_image)
-        image = resize_image(image)
-        image = fix_orientation(image)
-        
         img_base64 = image_to_base64(image)
 
-        col0, col1, col2 = st.columns([0.05, 0.3, 0.7])
-
-        with col0:
-            clear_clicked = st.button("❌", key="clear_image_button")
-            st.markdown("""
-                <style>
-                div[data-testid="stButton"] button {
-                    margin-top: 7px;
-                    background-color: white !important;
-                    color: black !important;
-                    border: 1px solid #ccc !important;
-                    border-radius: 6px !important;
-                        margin-top: 20px;
-                }
-                </style>
-            """, unsafe_allow_html=True)
-
-            if clear_clicked:
-               st.session_state.uploaded_image = None
-               st.rerun()
-
-        # Rasmni ko‘rsatish
-        with col1:
-            st.markdown(f"""
-                <div style="position: relative; display: inline-block; width: 100%;">
-                    <img src="data:image/png;base64,{img_base64}" style="width: 100%; border-radius: 12px; margin-top: 20px;" />
-                </div>
-            """, unsafe_allow_html=True)
-
-        # Ma'lumotlar ustuni
-        with col2:
-            with st.spinner(translations["detecting"][lang]):
-                drug_text, confidence = extract_drug_info_by_cropping(image)
-                cleaned = clean_drug_name(drug_text)
-                has_cyrillic = bool(re.search('[\u0400-\u04FF]', cleaned))
-                drug_name = transliterate_ru_to_lat(cleaned) if has_cyrillic else cleaned
-
-                df = pd.read_csv("alternativa1.csv")
-                result = get_drug_info_from_csv(drug_name, df, lang)
-
-            if clear_clicked:
-                st.session_state.uploaded_image = None
-                st.experimental_rerun()
-
-            if result:
-                nomi, kasallik, instruktsiya, alternativalar, narx = result
-
-                
-                if is_mobile:
-    # Telefon ko‘rinishi uchun ustma-ust
-                   st.markdown(f"""
-        <div style="
-            background-color: #FDE9EA;
-            padding: 20px;
-            border-radius: 12px;
-            font-family: 'Segoe UI', sans-serif;
-            margin-top: 20px;
-            margin-bottom: 4px;
-            color: black;
-        ">
-            <div style="font-size: 24px; margin-bottom: 10px;">
-                {translations['drug_name'][lang]}: {nomi}
-            </div>
-            <div style="font-size: 22px;">
-                {translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}
-            </div>
-        </div>
-               """, unsafe_allow_html=True)
-                else:
-    # Katta ekranlar uchun yonma-yon
-                 st.markdown(f"""
-        <div style="
+        st.markdown(""" 
+            <style>
+        .image-border-wrapper {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #FDE9EA;
-            padding: 20px 24px;
-            border-radius: 12px;
-            font-family: 'Segoe UI', sans-serif;
-            font-weight: 400;
-            margin-top: 20px;
-            margin-bottom: 4px;
-            color: black;
-        ">
-            <div style="font-size: 30px;">{translations['drug_name'][lang]}: {nomi}</div>
-            <div style="font-size: 24px;">{translations['price_label'][lang]}: {narx if pd.notna(narx) else '-'}</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-                # OCR aniqlik foizini ko‘rsatish
-                st.markdown(f"<div style='color:#999;font-size:13px;padding-top:5px;'>{translations['detecting'][lang].split('...')[0]}: {confidence}%</div>", unsafe_allow_html=True)
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .image-border {
+            border: 3px solid #B0C4DE;
+            border-radius: 15px;
+            padding: 4px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        </style> 
+         """, unsafe_allow_html=True)
 
-                # Expander funksiyasi
-                def styled_expander(title, content_func, expanded=False):
-                    st.markdown(f"""
-                        <div style="
-                            background-color: #FDE9EA;
-                            color: black;
-                            font-size: 30px;
-                            font-weight: 400;
-                            padding: 10px 15px;
-                            border-radius: 8px;
-                            margin-bottom: 10px;
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                        ">{title}</div>
-                    """, unsafe_allow_html=True)
-                    with st.expander("", expanded=expanded):
-                        content_func()
+        st.markdown(f"""
+            <div class="image-border-wrapper">
+                <div class="image-border">
+                     <img src="data:image/png;base64,{img_base64}" width="250">
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
 
-                # Alternativ dorilar
-                styled_expander(
-    translations["alt_drugs"][lang],
-    lambda: st.dataframe(alternativalar, use_container_width=True),
-    expanded=False
-)
-                
-                # Kasalliklar
-                styled_expander(translations["illness"][lang],lambda: st.markdown(f"<div style='font-size:25px; line-height:1.5;'>{kasallik}</div>", unsafe_allow_html=True), expanded=False)
-                
-                # Instruksiya
-                formatted_instruksiya = "<br>".join(
-                    [re.sub(r"^(➤|\d+[\.\)]|\-|\•)?\s*", "", line).rstrip('.') + "." for line in str(instruktsiya).split("\n") if line.strip()]
-                )
-                #styled_expander(translations["usage"][lang], lambda: st.markdown(formatted_instruksiya, unsafe_allow_html=True), expanded=False)
-                styled_expander(
-                    translations["usage"][lang],
-                    lambda: st.markdown(
-                      f"<div style='font-size:25px; line-height:1.5;'>{formatted_instruksiya}</div>", unsafe_allow_html=True
-                    ),
-                    expanded=False
-                    )
-                # Diskleymer
-                st.markdown(f"""
-                    <div style='
-                        width: 100%;
-                        margin: 40px auto 20px auto;
-                        padding: 18px 24px;
-                        background-color: #FDE9EA;
-                        color: #ffffff;
-                        font-size: 17px;
-                        font-weight: 600;
-                        border-radius: 12px;
-                        font-family: "Segoe UI", Tahoma, sans-serif;
-                        text-align: center;
-                        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-                    '>{translations['disclaimer'][lang]}</div>
-                """, unsafe_allow_html=True)
+        if st.button("❌ Rasmni o‘chirish", key="clear_image_button"):
+            clear_image()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
+    with col2:
+        try:
+            image = Image.open(st.session_state.uploaded_image)
+            image = resize_image(image)
+            image = fix_orientation(image)
+            with st.spinner(translations["detecting"][lang]):
+                text, confidence = extract_drug_info_by_cropping(image)
+                cleaned = clean_drug_name(text)
+                drug_name = transliterate_ru_to_lat(cleaned) if is_cyrillic(cleaned) else cleaned
+                result = get_drug_info_from_csv(drug_name, df, lang)
+            if result:
+                add_to_history("image", st.session_state.uploaded_image, result)
+                render_drug_info(result)
             else:
-                st.markdown(f"""
-                    <div style='
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        text-align: center;
-                        padding: 30px;
-                        background-color: #FDE9EA;
-                        border: 1px solid #ffeeba;
-                        border-radius: 10px;
-                        color: white;
-                        font-size: 17px;
-                        font-weight: 500;
-                        font-family: "Segoe UI", sans-serif;
-                        margin-top: 40px;
-                    '>{translations["not_found"][lang]}</div>
-                """, unsafe_allow_html=True)
+                st.warning(translations["not_found"][lang])
+        except Exception as e:
+            st.error("❌ Xatolik yuz berdi:")
+            st.text(traceback.format_exc())
 
-    except Exception as e:
-        st.error(f"Xatolik: {e}")
-        st.text(traceback.format_exc())
+if st.session_state.history:
+    render_history()
