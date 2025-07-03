@@ -5,3 +5,15 @@ easyocr
 setuptools>=68.0.0
 wheel
 pip>=23.0
+fastapi
+uvicorn[standard]
+python-telegram-bot==20.3
+python-dotenv
+httpx
+pandas>=1.4.0
+numpy>=1.21.0
+soundfile>=0.11.0
+streamlit-webrtc>=0.38.0
+whisper @ git+https://github.com/openai/whisper.git
+webrtcvad>=2.0.10
+av>=10.0.0
